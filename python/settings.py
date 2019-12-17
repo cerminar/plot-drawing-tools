@@ -1,8 +1,5 @@
-# %load settings.py
-# === samples =====================================================
-import python.selections as selections
-import python.collections as collections
 
+# === samples =====================================================
 import pprint
 
 
@@ -20,13 +17,10 @@ sample = 'ele-V9'
 
 do_rate = False
 do_eff = False
-do_reso = False
-do_calib = True
+do_reso = True
+do_calib = False
 
 # === TP ==========================================================
-# tps = ['HMvDR',
-#        'HMvDRshapeDr']
-
 tps = [
        'EG',
        'TkEle',
@@ -41,21 +35,16 @@ tps = [
 histo_primitives = pd.DataFrame()
 
 if do_rate:
-    from python.plotters import rate_plotters, eg_rate_plotters
-
     for plotter in rate_plotters:
         histo_primitives = histo_primitives.append(plotter.get_histo_primitives(), ignore_index=True)
     for plotter in eg_rate_plotters:
         histo_primitives = histo_primitives.append(plotter.get_histo_primitives(), ignore_index=True)
 if do_eff or do_reso:
-    from python.plotters import eg_genmatched_plotters, track_genmatched_plotters
     for plotter in eg_genmatched_plotters:
         histo_primitives = histo_primitives.append(plotter.get_histo_primitives(), ignore_index=True)
     for plotter in track_genmatched_plotters:
         histo_primitives = histo_primitives.append(plotter.get_histo_primitives(), ignore_index=True)
 if do_calib:
-    from python.plotters import tp_calib_plotters
-
     for plotter in tp_calib_plotters:
         histo_primitives = histo_primitives.append(plotter.get_histo_primitives(), ignore_index=True)
 

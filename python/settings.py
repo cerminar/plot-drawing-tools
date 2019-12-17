@@ -1,4 +1,3 @@
-# %load settings.py
 # === samples =====================================================
 import python.selections as selections
 import python.collections as collections

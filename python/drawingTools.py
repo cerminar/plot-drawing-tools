@@ -485,20 +485,57 @@ class Sample():
         self.histo_filename = '../plots1/histos_{}{}.root'.format(self.name, version)
         self.histo_file = None
         self.type = type
+        self.oldStyle = False
 
     def __repr__(self):
         return '<{} {}, {}>'.format(self.__class__.__name__, self.histo_filename, self.type)
 
     def open_file(self):
-        self.histo_file = ROOT.TFile(self.histo_filename, 'r')
+        if self.histo_file is None:
+            self.histo_file = ROOT.TFile(self.histo_filename, 'r')
 
-    def build_file_primitive_index(self):
+    def build_file_primitive_index_oldStyle(self):
         # FIXME: this is really hugly
         composite_classes = {('GenParticleHistos', 'h_effNum_'): 'HistoSetEff',
                              ('GenParticleHistos', 'h_effDen_'): 'HistoSetEff'}
 
         self.open_file()
+        self.histo_file.cd()
+        data_list = []
+        classtype = 'CalibrationHistos'
+        print '--- {}'.format(classtype)
+        print '# of plots: {}'.format(len(self.histo_file.GetListOfKeys()))
+        # same primitives (tp, tp_sel, gen_sel) applies to several entries
+        key_set = set()
+        for histo in self.histo_file.GetListOfKeys():
+            # print histo.GetName()
+            name_parts = histo.GetName().split('_')
+            cltype, tp, tp_sel, gen_sel = None, None, None, None
+            if len(name_parts) == 4:
+                cltype, tp, tp_sel, gen_sel = classtype, name_parts[0], name_parts[1], name_parts[2]
+            else:
+                # this is a histo in a HistoSet class.. we need to handle this differently
+                composite_class = composite_classes[(classtype, '{}_{}_'.format(name_parts[0], name_parts[1]))]
+                cltype, tp, tp_sel, gen_sel = composite_class, name_parts[2], name_parts[3], name_parts[4]
+            key_set.add((cltype, tp, tp_sel, gen_sel))
+        print '# of primitives: {}'.format(len(key_set))
+        for cltype, tp, tp_sel, gen_sel in key_set:
+            data_list.append({'classtype': cltype,
+                              'tp': tp,
+                              'tp_sel': tp_sel,
+                              'gen_sel': gen_sel})
 
+        return pd.DataFrame(data_list)
+
+    def build_file_primitive_index(self):
+        if self.oldStyle:
+            return self.build_file_primitive_index_oldStyle()
+        # FIXME: this is really hugly
+        composite_classes = {('GenParticleHistos', 'h_effNum_'): 'HistoSetEff',
+                             ('GenParticleHistos', 'h_effDen_'): 'HistoSetEff'}
+
+        self.open_file()
+        self.histo_file.cd()
         data_list = []
         for key in self.histo_file.GetListOfKeys():
             # first level is classtype

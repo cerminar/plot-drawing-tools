@@ -1,6 +1,9 @@
+# %load python/settings.py
 
 # === samples =====================================================
 import pprint
+import python.plotters_config as plotters
+
 
 
 samples = []
@@ -15,38 +18,20 @@ for smp in samples:
 
 sample = 'ele-V9'
 
-do_rate = False
-do_eff = False
-do_reso = True
-do_calib = False
-
 # === TP ==========================================================
 tps = [
        'EG',
-       'TkEle',
+        'EGBRL',
+#        'TkEle',
        'TkEleEL',
-       'TkEleBRL',
+#        'TkEleBRL',
        'TkEleELBRL',
-       'TkEleALL',
+#        'TkEleALL',
        'TkEleELALL'
 ]
 
 # === Load the Histo Primitives ====================================
-histo_primitives = pd.DataFrame()
-
-if do_rate:
-    for plotter in rate_plotters:
-        histo_primitives = histo_primitives.append(plotter.get_histo_primitives(), ignore_index=True)
-    for plotter in eg_rate_plotters:
-        histo_primitives = histo_primitives.append(plotter.get_histo_primitives(), ignore_index=True)
-if do_eff or do_reso:
-    for plotter in eg_genmatched_plotters:
-        histo_primitives = histo_primitives.append(plotter.get_histo_primitives(), ignore_index=True)
-    for plotter in track_genmatched_plotters:
-        histo_primitives = histo_primitives.append(plotter.get_histo_primitives(), ignore_index=True)
-if do_calib:
-    for plotter in tp_calib_plotters:
-        histo_primitives = histo_primitives.append(plotter.get_histo_primitives(), ignore_index=True)
+histo_primitives = samples[0].build_file_primitive_index()
 
 
 # print histo_primitives.data.unique()
@@ -54,18 +39,12 @@ if do_calib:
 tp_select = {}
 
 for tp in tps:
-    tp_select[tp] = histo_primitives[histo_primitives.data == tp].data_sel.unique().tolist()
+    tp_select[tp] = histo_primitives[histo_primitives.tp == tp].tp_sel.unique().tolist()
 
 # ==== GEN selections ===============================================
 gen_select ={}
 for tp in tps:
-    gen_select[tp] = histo_primitives[histo_primitives.data == tp].gen_sel.unique().tolist()
-
-#  ==== labels ===============================================
-tp_labels = histo_primitives[['data', 'data_label']].drop_duplicates().set_index('data').T.to_dict('records')[0]
-tp_selection_labels = histo_primitives[['data_sel', 'data_sel_label']].drop_duplicates().set_index('data_sel').T.to_dict('records')[0]
-gen_selection_labels = histo_primitives[['gen_sel', 'gen_sel_label']].drop_duplicates().set_index('gen_sel').T.to_dict('records')[0]
-
+    gen_select[tp] = histo_primitives[histo_primitives.tp == tp].gen_sel.unique().tolist()
 
 
 import pprint
@@ -76,6 +55,3 @@ print '--- TP selections:'
 pp.pprint(tp_select)
 print '--- GEN selections:'
 pp.pprint(gen_select)
-
-
-# print selections.eg_rate_selections

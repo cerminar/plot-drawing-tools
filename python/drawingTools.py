@@ -549,7 +549,9 @@ class Sample():
                 # print histo.GetName()
                 name_parts = histo.GetName().split('_')
                 cltype, tp, tp_sel, gen_sel = None, None, None, None
-                if len(name_parts) == 4:
+                if len(name_parts) == 3:
+                    cltype, tp, tp_sel, gen_sel = classtype, name_parts[0], name_parts[1], None
+                elif len(name_parts) == 4:
                     cltype, tp, tp_sel, gen_sel = classtype, name_parts[0], name_parts[1], name_parts[2]
                 else:
                     # this is a histo in a HistoSet class.. we need to handle this differently

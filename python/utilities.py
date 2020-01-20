@@ -4,6 +4,10 @@ from drawingTools import draw
 
 
 def effSigma(hist):
+    """
+    See Chris Seez's original implementation in:
+    https://github.com/cms-sw/cmssw/blob/02d4198c0b6615287fd88e9a8ff650aea994412e/Validation/EcalClusters/test/macro/effSigma.C
+    """
     xaxis = hist.GetXaxis()
     nb = xaxis.GetNbins()
     if nb < 10:

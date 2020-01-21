@@ -497,8 +497,10 @@ class Sample():
     def build_file_primitive_index_oldStyle(self):
         # FIXME: this is really hugly
         composite_classes = {('GenParticleHistos', 'h_effNum_'): 'HistoSetEff',
-                             ('GenParticleHistos', 'h_effDen_'): 'HistoSetEff'}
-
+                             ('GenParticleHistos', 'h_effDen_'): 'HistoSetEff',
+                             ('TCHistos', 'h_tc_'): 'HistoSetClusters',
+                             ('ClusterHistos', 'h_cl2d_'): 'HistoSetClusters',
+                             ('Cluster3DHistos', 'h_cl3d_'): 'HistoSetClusters'}
         self.open_file()
         self.histo_file.cd()
         data_list = []
@@ -532,7 +534,11 @@ class Sample():
             return self.build_file_primitive_index_oldStyle()
         # FIXME: this is really hugly
         composite_classes = {('GenParticleHistos', 'h_effNum_'): 'HistoSetEff',
-                             ('GenParticleHistos', 'h_effDen_'): 'HistoSetEff'}
+                             ('GenParticleHistos', 'h_effDen_'): 'HistoSetEff',
+                             ('TCHistos', 'h_tc_'): 'HistoSetClusters',
+                             ('ClusterHistos', 'h_cl2d_'): 'HistoSetClusters',
+                             ('Cluster3DHistos', 'h_cl3d_'): 'HistoSetClusters',
+                             ('ResoHistos', 'h_reso_'): 'ResoHistos'}
 
         self.open_file()
         self.histo_file.cd()

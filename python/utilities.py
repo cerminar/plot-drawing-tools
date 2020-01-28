@@ -1,13 +1,10 @@
+# %load ./python/utilities.py
 import uuid
 import ROOT
 from drawingTools import draw
-
+import math
 
 def effSigma(hist):
-    """
-    See Chris Seez's original implementation in:
-    https://github.com/cms-sw/cmssw/blob/02d4198c0b6615287fd88e9a8ff650aea994412e/Validation/EcalClusters/test/macro/effSigma.C
-    """
     xaxis = hist.GetXaxis()
     nb = xaxis.GetNbins()
     if nb < 10:
@@ -24,11 +21,11 @@ def effSigma(hist):
     ave = hist.GetMean()
     rms = hist.GetRMS()
 
-    print 'xmax: {}, xmin: {}, ave: {}, rms: {}'.format(xmax, xmin, ave, rms)
+#     print 'xmax: {}, xmin: {}, ave: {}, rms: {}'.format(xmax, xmin, ave, rms)
 
-    total = 0.
+    total=0.
     for i in range(0, nb+2):
-        total += hist.GetBinContent(i)
+        total+=hist.GetBinContent(i)
 
     if total < 100.:
         print "effsigma: Too few entries {}".format(total)
@@ -48,11 +45,11 @@ def effSigma(hist):
     # scan the window center
     for iscan in range(-nrms, nrms+1):
         ibm = int((ave-xmin)/bwid+1+iscan)
-        x = (ibm-0.5)*bwid+xmin
+        x = (ibm-0.5)*bwid+xmin;
         xj = x
         xk = x
-        jbm = ibm
-        kbm = ibm
+        jbm = ibm;
+        kbm = ibm;
         bin = hist.GetBinContent(ibm)
         total = bin
         for j in range(1, nb):
@@ -69,7 +66,7 @@ def effSigma(hist):
                 kbm -= 1
                 xk -= bwid
                 bin = hist.GetBinContent(kbm)
-                total += bin
+                total += bin;
                 if total > rlim:
                     break
             else:
@@ -77,8 +74,8 @@ def effSigma(hist):
         dxf = (total-rlim)*bwid/bin
         wid = (xj-xk+bwid-dxf)*0.5
         if wid < widmin:
-            widmin = wid
-            ismin = iscan
+            widmin=wid
+            ismin=iscan
 
     if ismin == nrms or ismin == -nrms:
         ierr = 3
@@ -88,11 +85,32 @@ def effSigma(hist):
     return widmin
 
 
+def quantiles(yswz, zeroSuppress=True):
+    ys = [y for y in yswz if y > 0] if zeroSuppress else yswz[:]
+    if len(ys) < 3: return (0,0,0)
+    ys.sort()
+    ny = len(ys)
+    median = ys[ny/2]
+   #if ny > 400e9:
+   #    u95 = ys[min(int(ceil(ny*0.975)),ny-1) ]
+   #    l95 = ys[int(floor(ny*0.025))]
+   #    u68 = 0.5*(median+u95)
+   #    l68 = 0.5*(median+l95)
+    if ny > 20:
+        u68 = ys[min(int(math.ceil(ny*0.84)),ny-1) ]
+        l68 = ys[int(math.floor(ny*0.16))]
+    else:
+        rms = math.sqrt(sum((y-median)**2 for y in ys)/ny)
+        u68 = median + rms
+        l68 = median - rms
+    return (median,l68,u68)
+
+
 def gausstailfit_wc(name, project_hist, bin_limits):
     global cache
     if cache is not None and not cache[(cache.h_name == name) & (cache.bin_limits == bin_limits)].empty:
         print 'READ cached fit results h_name: {}, bin_limits: {}'.format(name, bin_limits)
-        print cache[(cache.h_name == name) & (cache.bin_limits == bin_limits)].results
+#         print cache[(cache.h_name == name) & (cache.bin_limits == bin_limits)].results
         return cache[(cache.h_name == name) & (cache.bin_limits == bin_limits)].results.values[0]
 
     max_bin = project_hist.GetMaximumBin()
@@ -115,10 +133,10 @@ def gausstailfit_wc(name, project_hist, bin_limits):
     stuff.append(fitf)
     project_hist.Draw("same")
 #     c.Draw()
-    print '   name: {}, y_max = {}, max_value = {}, RMS = {}'.format(name, max_y, max_value, rms_value)
+#     print '   name: {}, y_max = {}, max_value = {}, RMS = {}'.format(name, max_y, max_value, rms_value)
     result = project_hist.Fit('gausstail', 'QERLS+')
     result.Print()
-    print '   norm = {}, reso_mean = {}, reso_sigma = {}, alpha = {}, n = {}'.format(result.GetParams()[0], result.GetParams()[1], result.GetParams()[2], result.GetParams()[3], result.GetParams()[4])
+#     print '   norm = {}, reso_mean = {}, reso_sigma = {}, alpha = {}, n = {}'.format(result.GetParams()[0], result.GetParams()[1], result.GetParams()[2], result.GetParams()[3], result.GetParams()[4])
 #     func = project_hist.GetFunction("gaus")
     # print '   NDF = {}, chi2 = {}, prob = {}'.format(fitf.GetNDF(), fitf.GetChisquare(), fitf.GetProb())
 
@@ -130,9 +148,10 @@ def gausstailfit_wc(name, project_hist, bin_limits):
 
     return result
 
-
 def effective_sigma_energy(project_hist):
-    return (effSigma(project_hist),)
+    eff_sigma = effSigma(project_hist)
+    bin_values = [project_hist.GetBinContent(bin) for bin in range(1, project_hist.GetNbinsX()+1)]
+    return (eff_sigma,)
 
 
 def gausstailfit_energy(project_hist):
@@ -144,24 +163,67 @@ def gausstailfit_energy(project_hist):
     def gausstail(x, p):
         return p[0] * ROOT.Math.crystalball_function(x[0], p[3], p[4], p[2], p[1])
 
-    fitf = ROOT.TF1('gausstail', gausstail, -1.5, 1.5, 5)
+    fitf = ROOT.TF1('gausstail', gausstail, -1.0, 0.5, 5)
     fitf.SetParNames('norm', 'mean', 'sigma', 'alpha', 'n')
 #     fitf.FixParameter(0, 1.)
     fitf.SetParLimits(1, max_value-0.04, max_value+0.04)
     fitf.SetParameters(max_y, max_value, rms_value, 1, 1)
-#     draw([project_hist], labels=['fit'], text=name)
     stuff.append(fitf)
-    project_hist.Draw("same")
+    project_hist.Draw()
 #     c.Draw()
-    print '   y_max = {}, max_value = {}, RMS = {}'.format(max_y, max_value, rms_value)
+#     print '   y_max = {}, max_value = {}, RMS = {}'.format(max_y, max_value, rms_value)
     result = project_hist.Fit('gausstail', 'QERLS+')
     result.Print()
-    print '   norm = {}, reso_mean = {}, reso_sigma = {}, alpha = {}, n = {}'.format(result.GetParams()[0],
-                                                                                     result.GetParams()[1],
-                                                                                     result.GetParams()[2],
-                                                                                     result.GetParams()[3],
-                                                                                     result.GetParams()[4])
+#     print '   norm = {}, reso_mean = {}, reso_sigma = {}, alpha = {}, n = {}'.format(result.GetParams()[0],
+#                                                                                      result.GetParams()[1],
+#                                                                                      result.GetParams()[2],
+#                                                                                      result.GetParams()[3],
+#                                                                                      result.GetParams()[4])
     return result.GetParams()[0], result.GetParams()[1], result.GetParams()[2], result.GetParams()[3], result.GetParams()[4]
+
+
+def gausstailfit_ptresp(project_hist, x_low=0., x_high=1.2):
+    max_bin = project_hist.GetMaximumBin()
+    max_value = project_hist.GetBinCenter(max_bin)
+    rms_value = project_hist.GetRMS()
+    max_y = project_hist.GetMaximum()
+
+    eff_sigma = effSigma(project_hist)
+
+    prob = np.array([0.001, 0.999])
+
+    q = np.array([0., 1.2])
+    y = project_hist.GetQuantiles(2,q,prob)
+    x_low = q[0]
+    x_high = q[1]
+
+    def gausstail(x, p):
+        return p[0] * ROOT.Math.crystalball_function(x[0], p[3], p[4], p[2], p[1])
+
+    print  x_low, x_high
+    fitf = ROOT.TF1('gausstail', gausstail, x_low, x_high, 5)
+
+    fitf.SetParNames('norm', 'mean', 'sigma', 'alpha', 'n')
+#     fitf.FixParameter(0, 1.)
+    fitf.SetParLimits(1, max_value-eff_sigma, max_value+eff_sigma)
+    fitf.SetParameters(max_y, max_value, eff_sigma, 1, 1)
+    stuff.append(fitf)
+    project_hist.Draw()
+
+
+    #     c.Draw()
+#     print '   y_max = {}, max_value = {}, RMS = {}'.format(max_y, max_value, rms_value)
+    result = project_hist.Fit('gausstail', 'QERLS+')
+    result.Print()
+    print 'CHi2 prob: {}'.format(fitf.GetProb())
+#     print '   norm = {}, reso_mean = {}, reso_sigma = {}, alpha = {}, n = {}'.format(result.GetParams()[0],
+#                                                                                      result.GetParams()[1],
+#                                                                                      result.GetParams()[2],
+#                                                                                      result.GetParams()[3],
+#                                                                                      result.GetParams()[4])
+    return result.GetParams()[0], result.GetParams()[1], result.GetParams()[2], result.GetParams()[3], result.GetParams()[4], fitf.GetProb()
+
+
 
 
 def computeResolution(histo2d,
@@ -185,17 +247,19 @@ def computeResolution(histo2d,
                                                                                                     bin_limits,
                                                                                                     fit_function)
                 return cache[(cache.h_name == histo_name) &
-                             (cache.bin_limits == bin_limits) &
-                             (cache.fit_function == fit_function)].results.values[0]
+                            (cache.bin_limits == bin_limits) &
+                            (cache.fit_function == fit_function)].results.values[0]
             else:
                 print "No ENTRY in CACHE"
                 result = fit_function(project_hist)
                 cache.loc[cache.shape[0]+1] = {'h_name': histo_name,
-                                               'bin_limits': bin_limits,
-                                               'fit_function': fit_function,
-                                               'results': result}
+                                      'bin_limits': bin_limits,
+                                      'fit_function': fit_function,
+                                      'results': result}
                 return result
         return fit_function(project_hist)
+
+
 
     h2d = histo2d.Clone()
     h2d.GetYaxis().SetRangeUser(y_axis_range[0], y_axis_range[1])
@@ -207,12 +271,18 @@ def computeResolution(histo2d,
         stuff.append(y_proj)
         x_low = h2d.GetXaxis().GetBinLowEdge(x_bin_low)
         x_high = h2d.GetXaxis().GetBinUpEdge(x_bin_high)
-        print 'x_low: {} x_high: {}'.format(x_low, x_high)
+#         print 'x_low: {} x_high: {}'.format(x_low, x_high)
+        draw([y_proj], labels=['fit'], text='BIN: ({}, {}) = ({}, {}) GeV, RES: {}'.format(
+                                            x_bin_low, x_bin_high, x_low, x_high, 0))
+
         fit_result = get_results(histo2d.GetName(),
                                  y_proj,
                                  (x_bin_low, x_bin_high),
                                  fit_function,
                                  cache)
+#         draw([y_proj], labels=['fit'], text='BIN: ({}, {}) = ({}, {}) GeV, RES: {}'.format(
+#                                             x_bin_low, x_bin_high, x_low, x_high, fit_result[result_index]))
+
         h2d.SetAxisRange(x_low, x_high)
         x_mean = h2d.GetMean()
         x.append(x_mean)
@@ -237,7 +307,7 @@ def computeEResolution(h2d_orig,
         stuff.append(y_proj)
         x_low = h2d.GetXaxis().GetBinLowEdge(x_bin_low)
         x_high = h2d.GetXaxis().GetBinUpEdge(x_bin_high)
-        print 'x_low: {} x_high: {}'.format(x_low, x_high)
+#         print 'x_low: {} x_high: {}'.format(x_low, x_high)
 #         fit_result = gausstailfit(h2d_orig.GetName(), y_proj)
         fit_result = gausstailfit_wc(h2d_orig.GetName(), y_proj, (x_bin_low, x_bin_high))
         h2d.SetAxisRange(x_low, x_high)

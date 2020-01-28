@@ -8,11 +8,11 @@ import pandas as pd
 # some useful globals, mainly to deal with ROOT idiosyncrasies
 c_idx = 0
 p_idx = 0
-colors = range(1, 12)
 colors = [1, 632-4, 416+1, 600-3, 616+1, 432-3]
+colors.extend(range(1, 12))
 
 
-marker_styles = [8, 21, 22, 23, 33]
+marker_styles = [8, 21, 22, 23, 33, 33, 33, 33, 33, 33, 33, 33]
 stuff = []
 f_idx = 0
 

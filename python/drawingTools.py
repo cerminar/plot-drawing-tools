@@ -1,4 +1,4 @@
-# %load drawingTools.py
+# %load python/drawingTools.py
 import ROOT
 import math
 import uuid
@@ -180,6 +180,9 @@ class DrawMachine(object):
 
 
     def drawAdditionalText(self):
+        """
+            Draw the additional text which is specified in the drawing config.
+        """
         tex = ROOT.TLatex()
         global stuff
         stuff.append(tex)
@@ -301,11 +304,6 @@ class DrawMachine(object):
 
             if not self.overlay:
                 self.canvas.cd(hidx+1)
-                if text:
-                    newtext = '{}: {}'.format(self.labels[hidx], text)
-                    rtext = getText(newtext, 0.15, 0.85)
-                    rtext.Draw('same')
-                    self.drawAdditionalText()
 
             d_hist = hist
             if norm:
@@ -358,6 +356,16 @@ class DrawMachine(object):
                 rtext = getText(text, 0.15, 0.85)
                 rtext.Draw("same")
             self.drawAdditionalText()
+        elif not self.overlay:
+            print 'NO OVERLAY'
+            for hidx, hist in enumerate(self.histos):
+                self.canvas.cd(hidx+1)
+                if text:
+                    print 'TEXT: {}'.format(text)
+                    newtext = '{}: {}'.format(self.labels[hidx], text)
+                    rtext = getText(newtext, 0.15, 0.85)
+                    rtext.Draw('same')
+                    self.drawAdditionalText()
 
         pad_range = range(0, 1)
         if not self.overlay:
@@ -644,7 +652,6 @@ class HPlot:
                                                               row.gen_sel,
                                                               sample.histo_file)},
                                              ignore_index=True)
-
 
     def get_histo(self,
                   classtype,

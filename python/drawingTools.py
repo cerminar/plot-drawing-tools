@@ -1,3 +1,4 @@
+# %load python/drawingTools.py
 # %load drawingTools.py
 import ROOT
 import math
@@ -200,7 +201,8 @@ class DrawMachine(object):
                 if self.overlay:
                     hist.SetMarkerColor(colors[hidx])
                     hist.SetLineColor(self.config.colors[hidx])
-
+            elif 'TF1' in histo_class:
+                hist.SetLineColor(self.config.colors[hidx])
             else:
                 hist.SetStats(self.config.do_stats)
                 if self.overlay:
@@ -330,11 +332,11 @@ class DrawMachine(object):
             y_max_value = y_max
 
             if y_min is None:
-                y_min_value = min([hist.GetBinContent(hist.GetMinimumBin()) for hist in drawn_histos if 'TGraph' not in hist.ClassName()] +
-                                  [min(hist.GetY()) for hist in drawn_histos if 'TGraph' in hist.ClassName()])
+                y_min_value = min([hist.GetBinContent(hist.GetMinimumBin()) for hist in drawn_histos if 'TGraph' not in hist.ClassName() and 'TF1' not in hist.ClassName()] +
+                                  [min(hist.GetY()) for hist in drawn_histos if 'TGraph' in hist.ClassName() and 'TF1' not in hist.ClassName()])
             if y_max is None:
-                y_max_value = max([hist.GetBinContent(hist.GetMaximumBin()) for hist in drawn_histos if 'TGraph' not in hist.ClassName()] +
-                                  [max(hist.GetY()) for hist in drawn_histos if 'TGraph' in hist.ClassName()])*1.2
+                y_max_value = max([hist.GetBinContent(hist.GetMaximumBin()) for hist in drawn_histos if 'TGraph' not in hist.ClassName() and 'TF1' not in hist.ClassName()] +
+                                  [max(hist.GetY()) for hist in drawn_histos if 'TGraph' in hist.ClassName() and 'TF1' not in hist.ClassName()])*1.2
 
             for hist in drawn_histos:
                 hist.GetXaxis().SetTitleOffset(1.4)

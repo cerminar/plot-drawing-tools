@@ -1,4 +1,5 @@
 # %load python/drawingTools.py
+# %load python/drawingTools.py
 # %load drawingTools.py
 import ROOT
 import math
@@ -296,24 +297,27 @@ class DrawMachine(object):
             if 'TGraph' in histo_class:
                 opt = 'P'+options
             if hidx:
-                opt = 'same,'+opt
+                if self.overlay:
+                    opt = 'same,'+opt
             else:
                 if 'TGraph' in histo_class:
                     opt = opt+'A'
 
             if not self.overlay:
                 self.canvas.cd(hidx+1)
-                if text:
-                    newtext = '{}: {}'.format(self.labels[hidx], text)
-                    rtext = getText(newtext, 0.15, 0.85)
-                    rtext.Draw('same')
-                    self.drawAdditionalText()
 
             d_hist = hist
             if norm:
                 d_hist = hist.DrawNormalized(opt, 1.)
             else:
                 d_hist.Draw(opt)
+
+            if not self.overlay:
+                if text:
+                    newtext = '{}: {}'.format(self.labels[hidx], text)
+                    rtext = getText(newtext, 0.15, 0.85)
+                    rtext.Draw('same')
+                    self.drawAdditionalText()
 
             if do_profile:
                 profname = d_hist.GetName()+'_prof_'+str(p_idx)
@@ -442,7 +446,7 @@ def draw(histograms,
             x_axis_label=x_axis_label,
             v_lines=v_lines,
             h_lines=h_lines,
-            do_profile=False,
+            do_profile=do_profile,
             # do_ratio=False,
            )
     if do_write:
@@ -624,7 +628,6 @@ class HPlot:
 
         self.data = pd.DataFrame(columns=['sample', 'pu', 'tp', 'tp_sel', 'gen_sel', 'classtype', 'histo'])
 
-
     def create_histo_proxies(self, classtype):
         for sample in self.samples_:
             histo_primtive_index = sample.build_file_primitive_index()
@@ -646,7 +649,10 @@ class HPlot:
                                                               row.gen_sel,
                                                               sample.histo_file)},
                                              ignore_index=True)
-
+            self.data.drop_duplicates(
+                subset=['sample', 'pu', 'tp', 'tp_sel', 'gen_sel', 'classtype'],
+                inplace=True,
+                keep='last')
 
     def get_histo(self,
                   classtype,

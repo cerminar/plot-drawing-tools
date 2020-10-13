@@ -677,7 +677,8 @@ class HPlot:
         histo_df = self.data.query(query)
 
         if histo_df.empty:
-            print 'No match found for: pu: {}, tp: {}, tp_sel: {}, gen_sel: {}, classtype: {}'.format(pu, tp, tp_sel, gen_sel, classtype)
+            print 'No match found for: sample: {} pu: {}, tp: {}, tp_sel: {}, gen_sel: {}, classtype: {}'.format(
+                sample, pu, tp, tp_sel, gen_sel, classtype)
             return None, None, None
         if debug:
             print histo_df
@@ -700,6 +701,8 @@ class HPlot:
             labels.append(', '.join([self.labels_dict[tx] for tx in item[1].values if self.labels_dict[tx] != '']))
 
         # print labels
-        text = ', '.join([self.labels_dict[fl] for fl in histo_df[text_fields].iloc[0].values if self.labels_dict[fl] != ''])
+        text = ', '.join(
+            [self.labels_dict[fl] for fl in histo_df[text_fields].iloc[0].values
+                if fl in self.labels_dict.keys() and self.labels_dict[fl] != ''])
         histo = [his.get(debug) for his in histo_df['histo'].values]
         return histo, labels, text

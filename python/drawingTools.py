@@ -1,17 +1,21 @@
 # %load python/drawingTools.py
 # %load python/drawingTools.py
 # %load drawingTools.py
+from __future__ import absolute_import
+from __future__ import print_function
 import ROOT
 import math
 import uuid
 import pandas as pd
+import six
+from six.moves import range
 
 
 # some useful globals, mainly to deal with ROOT idiosyncrasies
 c_idx = 0
 p_idx = 0
 colors = [1, 632-4, 416+1, 600-3, 616+1, 432-3]
-colors.extend(range(1, 12))
+colors.extend(list(range(1, 12)))
 
 
 marker_styles = [8, 21, 22, 23, 33, 33, 33, 33, 33, 33, 33, 33]
@@ -138,6 +142,7 @@ class DrawConfig(object):
         self.additional_text = []
         self.additional_text_size = 0.03
         return
+
 
 tdr_config = DrawConfig()
 tdr_config.additional_text.append((0.13,0.91,"#scale[1.5]{CMS} #scale[1.]{Phase-2 Simulation}"))
@@ -365,9 +370,9 @@ class DrawMachine(object):
                 rtext.Draw("same")
             self.drawAdditionalText()
 
-        pad_range = range(0, 1)
+        pad_range = list(range(0, 1))
         if not self.overlay:
-            pad_range = range(1, len(self.histos)+1)
+            pad_range = list(range(1, len(self.histos)+1))
 
         self.canvas.Update()
         for pad_id in pad_range:
@@ -462,8 +467,8 @@ class RootFile:
     def __init__(self, file_name):
         global file
         self.file_name = file_name
-        if self.file_name not in files.keys():
-            print 'get file: {}'.format(self.file_name)
+        if self.file_name not in list(files.keys()):
+            print('get file: {}'.format(self.file_name))
             files[self.file_name] = ROOT.TFile(self.file_name)
         self._file = files[self.file_name]
         self._file_keys = None
@@ -473,8 +478,8 @@ class RootFile:
 
     def GetListOfKeys(self):
         global file_keys
-        if self.file_name not in file_keys.keys():
-            print 'get list'
+        if self.file_name not in list(file_keys.keys()):
+            print('get list')
             file_keys[self.file_name] = self._file.GetListOfKeys()
         self._file_keys = file_keys[self.file_name]
         return self._file_keys
@@ -511,8 +516,8 @@ class Sample():
         self.histo_file.cd()
         data_list = []
         classtype = 'CalibrationHistos'
-        print '--- {}'.format(classtype)
-        print '# of plots: {}'.format(len(self.histo_file.GetListOfKeys()))
+        print('--- {}'.format(classtype))
+        print('# of plots: {}'.format(len(self.histo_file.GetListOfKeys())))
         # same primitives (tp, tp_sel, gen_sel) applies to several entries
         key_set = set()
         for histo in self.histo_file.GetListOfKeys():
@@ -526,7 +531,7 @@ class Sample():
                 composite_class = composite_classes[(classtype, '{}_{}_'.format(name_parts[0], name_parts[1]))]
                 cltype, tp, tp_sel, gen_sel = composite_class, name_parts[2], name_parts[3], name_parts[4]
             key_set.add((cltype, tp, tp_sel, gen_sel))
-        print '# of primitives: {}'.format(len(key_set))
+        print('# of primitives: {}'.format(len(key_set)))
         for cltype, tp, tp_sel, gen_sel in key_set:
             data_list.append({'classtype': cltype,
                               'tp': tp,
@@ -537,6 +542,7 @@ class Sample():
 
     def build_file_primitive_index(self):
         if self.oldStyle:
+            print ('This is old style')
             return self.build_file_primitive_index_oldStyle()
         # FIXME: this is really hugly
         composite_classes = {('GenParticleHistos', 'h_effNum_'): 'HistoSetEff',
@@ -552,13 +558,13 @@ class Sample():
         for key in self.histo_file.GetListOfKeys():
             # first level is classtype
             classtype = key.GetName()
-            print '--- {}'.format(classtype)
+            print('--- {}'.format(classtype))
             file_dir = self.histo_file.GetDirectory(key.GetName())
-            print '# of plots: {}'.format(len(file_dir.GetListOfKeys()))
+            print('# of plots: {}'.format(len(file_dir.GetListOfKeys())))
             # same primitives (tp, tp_sel, gen_sel) applies to several entries
             key_set = set()
             for histo in file_dir.GetListOfKeys():
-                # print histo.GetName()
+                # print(histo.GetName())
                 name_parts = histo.GetName().split('_')
                 cltype, tp, tp_sel, gen_sel = None, None, None, None
                 if len(name_parts) == 3:
@@ -570,7 +576,7 @@ class Sample():
                     composite_class = composite_classes[(classtype, '{}_{}_'.format(name_parts[0], name_parts[1]))]
                     cltype, tp, tp_sel, gen_sel = composite_class, name_parts[2], name_parts[3], name_parts[4]
                 key_set.add((cltype, tp, tp_sel, gen_sel))
-            print '# of primitives: {}'.format(len(key_set))
+            print('# of primitives: {}'.format(len(key_set)))
             for cltype, tp, tp_sel, gen_sel in key_set:
                 data_list.append({'classtype': cltype,
                                   'tp': tp,
@@ -583,17 +589,17 @@ class Sample():
         primitive_index = self.build_file_primitive_index()
         classtypes = primitive_index.classtype.unique()
         for classtype in classtypes:
-            print '- HistoClass: {}'.format(classtype)
+            print('- HistoClass: {}'.format(classtype))
             tps = primitive_index[primitive_index.classtype == classtype].tp.unique()
             for tp in tps:
-                print '  - TP: {}'.format(tp)
+                print('  - TP: {}'.format(tp))
                 tp_sels = primitive_index[(primitive_index.classtype == classtype) &
                                           (primitive_index.tp == tp)].tp_sel.unique()
                 for tp_sel in tp_sels:
                     gen_sels = primitive_index[(primitive_index.classtype == classtype) &
                                                (primitive_index.tp == tp) &
                                                (primitive_index.tp_sel == tp_sel)].gen_sel.unique()
-                    print '    - TP SEL: {} -> GEN SEL: {}'.format(tp_sel, gen_sels)
+                    print('    - TP SEL: {} -> GEN SEL: {}'.format(tp_sel, gen_sels))
 
 
 class HProxy:
@@ -611,7 +617,7 @@ class HProxy:
             if self.gen_sel is None:
                 name = '{}_{}'.format(self.tp, self.tp_sel)
             if debug:
-                print '-- HProxy:Get: {}'.format(name)
+                print('-- HProxy:Get: {}'.format(name))
             self.instance = self.classtype(name, self.root_file, debug)
         return self.instance
 
@@ -631,9 +637,12 @@ class HPlot:
     def create_histo_proxies(self, classtype):
         for sample in self.samples_:
             histo_primtive_index = sample.build_file_primitive_index()
-            class_primitive_index = histo_primtive_index[histo_primtive_index.classtype == str(classtype).split('.')[-1]]
+            if histo_primtive_index.empty:
+                print ('*** ERROR: No histo primitives for sample {}!'.format(sample))
+                continue
+            class_primitive_index = histo_primtive_index[histo_primtive_index.classtype == str(classtype).split('.')[-1].rstrip('\'>')]
             if class_primitive_index.empty:
-                print '*** ERROR: No entry for class: {} in the primtive index!'.format(classtype)
+                print('*** ERROR: No entry for class: {} in the primtive index!'.format(classtype))
                 return
 
             for index, row in class_primitive_index.iterrows():
@@ -654,7 +663,7 @@ class HPlot:
                 inplace=True,
                 keep='last')
 
-    def get_histo(self,
+   def get_histo(self,
                   classtype,
                   sample=None,
                   pu=None,
@@ -674,20 +683,49 @@ class HPlot:
         if sample is not None:
             query += '& (sample == @sample)'
 
-        histo_df = self.data.query(query)
+        # we want to preserve the order as in the input lists
+        histo_df = self.data.query(query).copy()
 
+        sorter_sample = dict(zip(sample, range(len(sample))))        
+        histo_df['sample_rank'] = histo_df['sample'].map(sorter_sample)
+
+        sorter_pu = dict(zip(pu, range(len(pu))))        
+        histo_df['pu_rank'] = histo_df['pu'].map(sorter_pu)
+
+        sorter_tp = dict(zip(tp, range(len(tp))))        
+        histo_df['tp_rank'] = histo_df['tp'].map(sorter_tp)
+
+        sorter_tp_sel = dict(zip(tp_sel, range(len(tp_sel))))        
+        histo_df['tp_sel_rank'] = histo_df['tp_sel'].map(sorter_tp_sel)
+
+        sorter_gen_sel = dict(zip(gen_sel, range(len(gen_sel))))        
+        histo_df['gen_sel_rank'] = histo_df['gen_sel'].map(sorter_gen_sel)
+        
+        histo_df.sort_values(['sample_rank', 'pu_rank', 'tp_rank', 'tp_sel_rank', 'gen_sel_rank'], 
+                             ascending=[True, True, True, True, True],
+                             inplace=True)
+        
+        histo_df.drop('sample_rank', axis=1, inplace=True)
+        histo_df.drop('pu_rank', axis=1, inplace=True)
+        histo_df.drop('tp_rank', axis=1, inplace=True)
+        histo_df.drop('tp_sel_rank', axis=1, inplace=True)
+        histo_df.drop('gen_sel_rank', axis=1, inplace=True)
+
+        #df.sort_values(['Player', 'Year', 'Tm_Rank'],
+        #ascending = [True, True, True], inplace = True)
+        #df.drop('Tm_Rank', 1, inplace = True)
         if histo_df.empty:
-            print 'No match found for: sample: {} pu: {}, tp: {}, tp_sel: {}, gen_sel: {}, classtype: {}'.format(
-                sample, pu, tp, tp_sel, gen_sel, classtype)
+            print('No match found for: sample: {} pu: {}, tp: {}, tp_sel: {}, gen_sel: {}, classtype: {}'.format(
+                sample, pu, tp, tp_sel, gen_sel, classtype))
             return None, None, None
         if debug:
-            print histo_df
+            print(histo_df)
 
         field_counts = histo_df.apply(lambda x: len(x.unique()))
         label_fields = []
         text_fields = []
         # print field_counts
-        for field in field_counts.iteritems():
+        for field in six.iteritems(field_counts):
             if(field[1] > 1 and field[0] != 'histo'):
                 label_fields.append(field[0])
             if(field[1] == 1 and field[0] != 'histo' and field[0] != 'classtype' and field[0] != 'sample'):
@@ -698,11 +736,12 @@ class HPlot:
 #         print 'text fields: {}'.format(text_fields)
 
         for item in histo_df[label_fields].iterrows():
+            print (item)
             labels.append(', '.join([self.labels_dict[tx] for tx in item[1].values if self.labels_dict[tx] != '']))
 
         # print labels
         text = ', '.join(
             [self.labels_dict[fl] for fl in histo_df[text_fields].iloc[0].values
-                if fl in self.labels_dict.keys() and self.labels_dict[fl] != ''])
+                if fl in list(self.labels_dict.keys()) and self.labels_dict[fl] != ''])
         histo = [his.get(debug) for his in histo_df['histo'].values]
         return histo, labels, text

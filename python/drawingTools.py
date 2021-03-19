@@ -155,6 +155,7 @@ rleg_config.legend_position = (0.7, 0.71)
 rleg_config.legend_size = (0.25, 0.14)
 
 
+
 class DrawMachine(object):
     def __init__(self, config):
         global stuff
@@ -165,6 +166,7 @@ class DrawMachine(object):
         self.overlay = True
         self.canvas = None
         self.legend = None
+        self.ratio_histos = []
         return
 
     def addHistos(self, histograms, labels):
@@ -232,6 +234,8 @@ class DrawMachine(object):
         else:
             if do_ratio:
                 c_height = c_height+200
+                xdiv = 1
+                ydiv = 2
 
         self.canvas = newCanvas(name=None,
                                 title=None,
@@ -267,7 +271,21 @@ class DrawMachine(object):
 
         return
 
+    
+    def addRatioHisto(self, num, den):
+        ratio = self.histos[num].Clone()
+        ratio.Sumw2()
+        ratio.Divide(self.histos[den])
+        
+        
+#         ratio = ROOT.TRatioPlot(self.histos[num], self.histos[den])
+#         print(self.histos[num].ClassName())
+#         print(self.histos[den].ClassName())
 
+        self.ratio_histos.append(ratio)
+
+    
+    
     def draw(self,
              text,
              options='',
@@ -282,18 +300,36 @@ class DrawMachine(object):
              x_axis_label=None,
              v_lines=None,
              h_lines=None,
-             do_profile=False):
+             do_profile=False,
+             do_ratio=False):
 
         global p_idx
         global stuff
-
+        
+        if len(self.ratio_histos) == 0:
+            do_ratio = False
+        
         self.formatHistos()
-        self.createCanvas()
+        self.createCanvas(do_ratio=do_ratio)
         if self.overlay:
             self.createLegend()
 
-        self.canvas.cd()
-
+        if not do_ratio:
+            self.canvas.cd()
+        else:
+            self.canvas.cd(1)
+            ROOT.gPad.SetPad(0, 0.2, 1, 1.0)
+            ROOT.gPad.SetBottomMargin(0)
+            self.canvas.cd(2)
+            ROOT.gPad.SetPad(0, 0, 1, 0.2)
+            ROOT.gPad.SetTopMargin(0)
+            ROOT.gPad.SetFrameFillColor(0)
+            ROOT.gPad.SetFrameBorderMode(0)
+            ROOT.gPad.SetFrameFillColor(0)
+            ROOT.gPad.SetFrameBorderMode(0)
+            ROOT.gPad.SetBottomMargin(0.26)
+            self.canvas.cd(1)
+            
         drawn_histos = []
         for hidx, hist in enumerate(self.histos):
             histo_class = hist.ClassName()
@@ -373,6 +409,8 @@ class DrawMachine(object):
         pad_range = list(range(0, 1))
         if not self.overlay:
             pad_range = list(range(1, len(self.histos)+1))
+        if do_ratio:
+            pad_range = [1]
 
         self.canvas.Update()
         for pad_id in pad_range:
@@ -396,12 +434,73 @@ class DrawMachine(object):
 
             ROOT.gPad.Update()
 
+        ROOT.gPad.Draw()
+        
+        if do_ratio:
+            self.drawRatio(x_min=x_min, x_max=x_max, y_min=0.7, y_max=1.3)
+        
+        
         self.canvas.Draw()
         return
 
     def write(self, name, ext='pdf'):
         self.canvas.SaveAs('{}.{}'.format(name, ext))
         return
+
+    def drawRatio(self, x_min=None, x_max=None, y_min=None, y_max=None):
+        y_axis_label = 'ratio'
+        
+        
+        self.canvas.cd(2)
+        ROOT.gPad.SetGridy(0)
+        for ratio in self.ratio_histos:
+            ratio.Draw()
+
+        # we now set the axis properties
+        y_min_value = y_min
+        y_max_value = y_max
+
+        drawn_histos = self.ratio_histos
+        if y_min is None:
+            y_min_value = min([hist.GetBinContent(hist.GetMinimumBin()) for hist in drawn_histos if 'TGraph' not in hist.ClassName() and 'TF1' not in hist.ClassName()] +
+                              [min(hist.GetY()) for hist in drawn_histos if 'TGraph' in hist.ClassName() and 'TF1' not in hist.ClassName()])*0.8
+        if y_max is None:
+            y_max_value = max([hist.GetBinContent(hist.GetMaximumBin()) for hist in drawn_histos if 'TGraph' not in hist.ClassName() and 'TF1' not in hist.ClassName()] +
+                              [max(hist.GetY()) for hist in drawn_histos if 'TGraph' in hist.ClassName() and 'TF1' not in hist.ClassName()])*1.2
+
+        print (y_min_value, y_max_value)
+        for hist in drawn_histos:
+            hist.GetXaxis().SetTitleOffset(5)
+            hist.GetYaxis().SetRangeUser(y_min_value, y_max_value)
+            if y_axis_label:
+                hist.GetYaxis().SetTitle(y_axis_label)
+#             if x_axis_label:
+#                 hist.GetXaxis().SetTitle(x_axis_label)
+            if x_min is not None and x_max is not None:
+                if 'TGraph' not in hist.ClassName():
+                    hist.GetXaxis().SetRangeUser(x_min, x_max)
+                else:
+                    hist.GetXaxis().SetLimits(x_min, x_max)
+            hist.GetXaxis().SetTitleSize(20)
+            hist.GetYaxis().CenterTitle()
+            hist.GetYaxis().SetTitleSize(20)
+            hist.GetYaxis().SetTitleOffset(1.3)
+            hist.GetXaxis().SetLabelSize(20)
+            hist.GetYaxis().SetLabelSize(20)
+            self.canvas.Update()
+
+        self.canvas.cd(2)
+        for h_line_y in [0.9, 1., 1.1]:
+            print (h_line_y)
+            print(ROOT.gPad.GetUxmin(), ROOT.gPad.GetUxmax())
+            aline = ROOT.TLine(ROOT.gPad.GetUxmin(), h_line_y, ROOT.gPad.GetUxmax(),  h_line_y)
+            aline.SetLineStyle(2)
+            aline.Draw("same")
+            stuff.append(aline)
+            self.canvas.Update()
+        
+        self.canvas.Draw()
+    
 
 
 def draw(histograms,

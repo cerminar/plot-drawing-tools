@@ -663,7 +663,7 @@ class HPlot:
                 inplace=True,
                 keep='last')
 
-   def get_histo(self,
+    def get_histo(self,
                   classtype,
                   sample=None,
                   pu=None,
@@ -675,49 +675,39 @@ class HPlot:
         labels = []
         text = ''
 
+
+
         query = '(pu == @pu) & (tp == @tp) & (tp_sel == @tp_sel) & (classtype == @classtype)'
+        rank_criteria = [('pu', pu), ('tp', tp), ('tp_sel', tp_sel)]
         if gen_sel is not None:
             query += ' & (gen_sel == @gen_sel)'
+            rank_criteria.append(('gen_sel', gen_sel))
         else:
             query += ' & (gen_sel.isnull())'
         if sample is not None:
             query += '& (sample == @sample)'
-
+            rank_criteria = [('sample',sample)] + rank_criteria
         # we want to preserve the order as in the input lists
         histo_df = self.data.query(query).copy()
 
-        sorter_sample = dict(zip(sample, range(len(sample))))        
-        histo_df['sample_rank'] = histo_df['sample'].map(sorter_sample)
-
-        sorter_pu = dict(zip(pu, range(len(pu))))        
-        histo_df['pu_rank'] = histo_df['pu'].map(sorter_pu)
-
-        sorter_tp = dict(zip(tp, range(len(tp))))        
-        histo_df['tp_rank'] = histo_df['tp'].map(sorter_tp)
-
-        sorter_tp_sel = dict(zip(tp_sel, range(len(tp_sel))))        
-        histo_df['tp_sel_rank'] = histo_df['tp_sel'].map(sorter_tp_sel)
-
-        sorter_gen_sel = dict(zip(gen_sel, range(len(gen_sel))))        
-        histo_df['gen_sel_rank'] = histo_df['gen_sel'].map(sorter_gen_sel)
-        
-        histo_df.sort_values(['sample_rank', 'pu_rank', 'tp_rank', 'tp_sel_rank', 'gen_sel_rank'], 
-                             ascending=[True, True, True, True, True],
-                             inplace=True)
-        
-        histo_df.drop('sample_rank', axis=1, inplace=True)
-        histo_df.drop('pu_rank', axis=1, inplace=True)
-        histo_df.drop('tp_rank', axis=1, inplace=True)
-        histo_df.drop('tp_sel_rank', axis=1, inplace=True)
-        histo_df.drop('gen_sel_rank', axis=1, inplace=True)
-
-        #df.sort_values(['Player', 'Year', 'Tm_Rank'],
-        #ascending = [True, True, True], inplace = True)
-        #df.drop('Tm_Rank', 1, inplace = True)
         if histo_df.empty:
             print('No match found for: sample: {} pu: {}, tp: {}, tp_sel: {}, gen_sel: {}, classtype: {}'.format(
                 sample, pu, tp, tp_sel, gen_sel, classtype))
             return None, None, None
+
+        rank_list = []
+        for (crit_name, crit) in rank_criteria:
+            sort_list = dict(zip(crit, range(len(crit))))
+            histo_df[crit_name+'_rank'] = histo_df[crit_name].map(sort_list)
+            rank_list.append(crit_name+'_rank')
+        
+        histo_df.sort_values(rank_list, 
+                             ascending=[True]*len(rank_list),
+                             inplace=True)
+        
+        for br in rank_list:
+            histo_df.drop(br, axis=1, inplace=True)
+
         if debug:
             print(histo_df)
 
@@ -736,7 +726,7 @@ class HPlot:
 #         print 'text fields: {}'.format(text_fields)
 
         for item in histo_df[label_fields].iterrows():
-            print (item)
+            # print (item)
             labels.append(', '.join([self.labels_dict[tx] for tx in item[1].values if self.labels_dict[tx] != '']))
 
         # print labels

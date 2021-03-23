@@ -1,6 +1,5 @@
 # %load python/drawingTools.py
-# %load python/drawingTools.py
-# %load drawingTools.py
+
 from __future__ import absolute_import
 from __future__ import print_function
 import ROOT
@@ -27,7 +26,7 @@ ROOT.gStyle.SetPadBottomMargin(0.13)
 ROOT.gStyle.SetPadLeftMargin(0.13)
 ROOT.gStyle.SetPadRightMargin(0.13)
 ROOT.gStyle.SetOptStat(False)
-
+# ROOT.gStyle.SetPalette()
 # ROOT.gStyle.SetCanvasBorderMode(0)
 # ROOT.gStyle.SetCanvasColor(0)
 
@@ -125,12 +124,42 @@ def drawAndProfileX(plot2d, miny=None, maxy=None, do_profile=True, options='', t
 
     c.Draw()
 
+
+class ColorPalette(object):
+    def __init__(self):
+        self.color_base = [
+            ROOT.kBlue+4, 
+            ROOT.kAzure+1, 
+            ROOT.kViolet+5, 
+            ROOT.kViolet, 
+            ROOT.kPink-9, 
+            ROOT.kRed-4, 
+            ROOT.kOrange+1, 
+            ROOT.kGreen+1, 
+            ROOT.kYellow-3]
+
+    def __getitem__(self, idx):
+        color = 0
+        if idx < len(self.color_base):
+            color = self.color_base[idx]
+        else:
+            mod = int(idx / len(self.color_base))
+            sign = 1
+            if mod%2:
+                sign = -1
+            index = idx-mod*len(self.color_base)
+            # print (f'mod: {mod}, index: {index}, sign: color: {self.color_base[index]+sign*mod*5}')
+            color = self.color_base[index]+sign*10
+        # print (f'get color: {color} for idx: {idx}')
+        return color
+
+    
 class DrawConfig(object):
     def __init__(self):
         self.do_stats = False
         self.marker_size = 0.5
-        self.marker_styles = [8, 21, 22, 23, 33]
-        self.colors = [1, 632-4, 416+1, 600-3, 616+1, 432-3]
+        self.marker_styles = [id for id in range(20, 50)]
+        
 #         self.canvas_sizes = (800, 600)
         self.canvas_sizes = (600, 600)
         # SetMargin (Float_t left, Float_t right, Float_t bottom, Float_t top)
@@ -141,11 +170,13 @@ class DrawConfig(object):
         self.legend_size = (0.26, 0.1)
         self.additional_text = []
         self.additional_text_size = 0.03
-        return
-
+    
+    @property
+    def colors(self):
+        return ColorPalette()
 
 tdr_config = DrawConfig()
-tdr_config.additional_text.append((0.13,0.91,"#scale[1.5]{CMS} #scale[1.]{Phase-2 Simulation}"))
+tdr_config.additional_text.append((0.13,0.91,"scale[1.5]{CMS} scale[1.]{Phase-2 Simulation}"))
 tdr_config.additional_text.append((0.69,0.91,"14TeV, 200 PU"))
 
 rleg_config = DrawConfig()
@@ -155,7 +186,16 @@ rleg_config.legend_position = (0.7, 0.71)
 rleg_config.legend_size = (0.25, 0.14)
 
 
+class RatioPlot(object):
+    def __init__(self, id_num, h_num, id_den, h_den):
+        self.id_num = id_num
+        self.id_den = id_den
+        self.histo = h_num.Clone()
+        self.histo.Divide(h_den)
+    
 
+    
+    
 class DrawMachine(object):
     def __init__(self, config):
         global stuff
@@ -187,7 +227,6 @@ class DrawMachine(object):
             self.labels.append(labels[hidx])
         return
 
-
     def drawAdditionalText(self):
         tex = ROOT.TLatex()
         global stuff
@@ -196,27 +235,38 @@ class DrawMachine(object):
         for txt in self.config.additional_text:
             tex.DrawLatexNDC(txt[0], txt[1], txt[2])
         tex.Draw("same");
-
-
-    def formatHistos(self):
-        for hidx,hist in enumerate(self.histos):
-            histo_class = hist.ClassName()
-            hist.UseCurrentStyle()
-
-            if 'TGraph' in histo_class:
+     
+    def formatHisto(self, hidx, hist, options=''):
+        histo_class = hist.ClassName()
+        hist.UseCurrentStyle()
+        # print (f'format histo of class {histo_class}')
+        if 'TGraph' in histo_class:
+            hist.SetMarkerSize(self.config.marker_size)
+            hist.SetMarkerStyle(self.config.marker_styles[hidx])
+            if self.overlay:
+                hist.SetMarkerColor(self.config.colors[hidx])
+                hist.SetLineColor(self.config.colors[hidx])
+        elif 'TH1' in histo_class:
+            hist.SetLineColor(self.config.colors[hidx])
+            if 'hist' not in options:
                 hist.SetMarkerSize(self.config.marker_size)
                 hist.SetMarkerStyle(self.config.marker_styles[hidx])
-                if self.overlay:
-                    hist.SetMarkerColor(colors[hidx])
-                    hist.SetLineColor(self.config.colors[hidx])
-            elif 'TF1' in histo_class:
+                hist.SetMarkerColor(self.config.colors[hidx])
+        else:
+            hist.SetStats(self.config.do_stats)
+            if self.overlay:
                 hist.SetLineColor(self.config.colors[hidx])
-            else:
-                hist.SetStats(self.config.do_stats)
-                if self.overlay:
-                    hist.SetLineColor(self.config.colors[hidx])
-        return
 
+    def formatHistos(self, options=''):
+        for hidx,hist in enumerate(self.histos):
+            self.formatHisto(hidx, hist, options)
+                
+    def formatRatioHistos(self, options=''):
+        for hist in self.ratio_histos:
+            self.formatHisto(hist.id_num, hist.histo, options)
+
+    
+    
     def createCanvas(self, do_ratio=False):
         if self.canvas is not None:
             return
@@ -265,23 +315,19 @@ class DrawMachine(object):
         for hidx,hist in enumerate(self.histos):
             histo_class = hist.ClassName()
             if 'TGraph' not in histo_class:
-                self.legend.AddEntry(hist, self.labels[hidx], 'l')
+                self.legend.AddEntry(hist, self.labels[hidx], 'lP')
             else:
                 self.legend.AddEntry(hist, self.labels[hidx], 'P')
 
         return
 
     
-    def addRatioHisto(self, num, den):
-        ratio = self.histos[num].Clone()
-        ratio.Sumw2()
-        ratio.Divide(self.histos[den])
-        
-        
-#         ratio = ROOT.TRatioPlot(self.histos[num], self.histos[den])
-#         print(self.histos[num].ClassName())
-#         print(self.histos[den].ClassName())
-
+    def addRatioHisto(self, id_num, id_den):
+        if len(self.ratio_histos) != 0:
+            if id_den not in [rh.id_den for rh in self.ratio_histos]:
+                print (f'***Warning: ratio histo can not be added, since id_den: {id_den} != from existing ratio plots!')
+                return
+        ratio = RatioPlot(id_num, self.histos[id_num], id_den, self.histos[id_den])
         self.ratio_histos.append(ratio)
 
     
@@ -309,7 +355,7 @@ class DrawMachine(object):
         if len(self.ratio_histos) == 0:
             do_ratio = False
         
-        self.formatHistos()
+        self.formatHistos(options)
         self.createCanvas(do_ratio=do_ratio)
         if self.overlay:
             self.createLegend()
@@ -448,19 +494,23 @@ class DrawMachine(object):
         return
 
     def drawRatio(self, x_min=None, x_max=None, y_min=None, y_max=None):
-        y_axis_label = 'ratio'
-        
-        
+#         y_axis_label = '#splitline{{ratio}}{{to {}}}'.format(self.labels[self.ratio_histos[0].id_den])
+        y_axis_label = '#splitline{{ratio}}{{scale[0.5]{{to {}}}}}'.format(self.labels[self.ratio_histos[0].id_den])
+
+        self.formatRatioHistos()
         self.canvas.cd(2)
         ROOT.gPad.SetGridy(0)
-        for ratio in self.ratio_histos:
-            ratio.Draw()
-
+        for id,ratio in enumerate(self.ratio_histos):
+            if id==0:
+                ratio.histo.Draw()
+            else:
+                ratio.histo.Draw('same')
+                
         # we now set the axis properties
         y_min_value = y_min
         y_max_value = y_max
 
-        drawn_histos = self.ratio_histos
+        drawn_histos = [rat.histo for rat in self.ratio_histos]
         if y_min is None:
             y_min_value = min([hist.GetBinContent(hist.GetMinimumBin()) for hist in drawn_histos if 'TGraph' not in hist.ClassName() and 'TF1' not in hist.ClassName()] +
                               [min(hist.GetY()) for hist in drawn_histos if 'TGraph' in hist.ClassName() and 'TF1' not in hist.ClassName()])*0.8
@@ -468,13 +518,14 @@ class DrawMachine(object):
             y_max_value = max([hist.GetBinContent(hist.GetMaximumBin()) for hist in drawn_histos if 'TGraph' not in hist.ClassName() and 'TF1' not in hist.ClassName()] +
                               [max(hist.GetY()) for hist in drawn_histos if 'TGraph' in hist.ClassName() and 'TF1' not in hist.ClassName()])*1.2
 
-        print (y_min_value, y_max_value)
+        # print (y_min_value, y_max_value)
         for hist in drawn_histos:
             hist.GetXaxis().SetTitleOffset(5)
             hist.GetYaxis().SetRangeUser(y_min_value, y_max_value)
             if y_axis_label:
                 hist.GetYaxis().SetTitle(y_axis_label)
-#             if x_axis_label:
+                hist.GetYaxis().SetTitleOffset(2.)
+                #             if x_axis_label:
 #                 hist.GetXaxis().SetTitle(x_axis_label)
             if x_min is not None and x_max is not None:
                 if 'TGraph' not in hist.ClassName():
@@ -484,14 +535,13 @@ class DrawMachine(object):
             hist.GetXaxis().SetTitleSize(20)
             hist.GetYaxis().CenterTitle()
             hist.GetYaxis().SetTitleSize(20)
-            hist.GetYaxis().SetTitleOffset(1.3)
             hist.GetXaxis().SetLabelSize(20)
             hist.GetYaxis().SetLabelSize(20)
             self.canvas.Update()
 
         self.canvas.cd(2)
         for h_line_y in [0.9, 1., 1.1]:
-            print (h_line_y)
+            # print (h_line_y)
             print(ROOT.gPad.GetUxmin(), ROOT.gPad.GetUxmax())
             aline = ROOT.TLine(ROOT.gPad.GetUxmin(), h_line_y, ROOT.gPad.GetUxmax(),  h_line_y)
             aline.SetLineStyle(2)

@@ -771,6 +771,31 @@ class HProxy:
         return self.instance
 
 
+class HWrapperLazy(object):
+    def __init__(self, histo):
+        self.histo = histo
+        self.data_df = None
+        self.filled = False
+    
+    def fill_df(self, data):
+        self.data_df = data.copy()
+    
+    def get(self, debug=False):
+        if not self.filled:
+            print('Wrapper: {} not filled!'.format(self))
+            self.histo.fill(self.data_df)
+            self.filled = True
+        return self.histo
+
+
+class HWrapper(object):
+    def __init__(self, histo):
+        self.histo = histo
+    
+    def get(self, debug=False):
+        return self.histo
+
+
 class HPlot:
     def __init__(self, samples, labels_dict):
         self.samples_ = samples

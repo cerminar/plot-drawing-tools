@@ -8,7 +8,7 @@ import uuid
 import pandas as pd
 import six
 from six.moves import range
-
+import array
 
 # some useful globals, mainly to deal with ROOT idiosyncrasies
 c_idx = 0
@@ -190,11 +190,40 @@ class RatioPlot(object):
     def __init__(self, id_num, h_num, id_den, h_den):
         self.id_num = id_num
         self.id_den = id_den
-        self.histo = h_num.Clone()
-        self.histo.Divide(h_den)
-    
+        if 'TH' in h_num.ClassName():
+            self.histo = h_num.Clone()
+            self.histo.Divide(h_den)
+        elif 'TGraph' in h_num.ClassName():
+            if h_num.GetN() != h_den.GetN():
+                raise ValueError(f'[RatioPlot] num and den {h_num.ClassName()} objs have different # of points: ({h_num.GetN() } and {h_den.GetN()} resp.)')
+            npoints = h_num.GetN()
+            x_den_buf = h_den.GetX()
+            x_den_buf.reshape((npoints,))
+            x_den = array.array('d', x_den_buf)
+            x_num_buf = h_den.GetX()
+            x_num_buf.reshape((npoints,))
+            x_num = array.array('d', x_num_buf)
+            y_den_buf = h_den.GetY()
+            y_den_buf.reshape((npoints,))
+            y_den = array.array('d', y_den_buf)
+            y_num_buf = h_num.GetY()
+            y_num_buf.reshape((npoints,))
+            y_num = array.array('d', y_num_buf)
+            y_ratio = [1.]*npoints
+            for id in range(0, npoints):
+                if x_num[id] != x_den[id]:
+                    raise ValueError(f'[RatioPlot] num and den {h_num.ClassName()} objs have diff. ascissa {x_num[id]} and {x_den[id]} for point {id}')
+                if y_den[id] == 0:
+                    if y_num[id] == 0:
+                        y_ratio[id] = 1
+                    else:
+                        y_ratio[id] = 99999
+                else:
+                    y_ratio[id] = y_num[id]/y_den[id]
+                # print(f'{id}: y_num: {y_num[id]} y_den: {y_den[id]}')
+                    
+            self.histo = ROOT.TGraph(npoints, x_num, array.array('d', y_ratio))
 
-    
     
 class DrawMachine(object):
     def __init__(self, config):
@@ -327,10 +356,11 @@ class DrawMachine(object):
             if id_den not in [rh.id_den for rh in self.ratio_histos]:
                 print (f'***Warning: ratio histo can not be added, since id_den: {id_den} != from existing ratio plots!')
                 return
-        ratio = RatioPlot(id_num, self.histos[id_num], id_den, self.histos[id_den])
-        self.ratio_histos.append(ratio)
-
-    
+        try:
+            ratio = RatioPlot(id_num, self.histos[id_num], id_den, self.histos[id_den])
+            self.ratio_histos.append(ratio)
+        except Exception as inst:
+            print(f"***Warning: Ratio plot can not be added: {str(inst)}")
     
     def draw(self,
              text,
@@ -347,7 +377,9 @@ class DrawMachine(object):
              v_lines=None,
              h_lines=None,
              do_profile=False,
-             do_ratio=False):
+             do_ratio=False,
+             y_min_ratio=0.7,
+             y_max_ratio=1.3):
 
         global p_idx
         global stuff
@@ -483,7 +515,7 @@ class DrawMachine(object):
         ROOT.gPad.Draw()
         
         if do_ratio:
-            self.drawRatio(x_min=x_min, x_max=x_max, y_min=0.7, y_max=1.3)
+            self.drawRatio(x_min=x_min, x_max=x_max, y_min=y_min_ratio, y_max=y_max_ratio)
         
         
         self.canvas.Draw()
@@ -501,10 +533,15 @@ class DrawMachine(object):
         self.canvas.cd(2)
         ROOT.gPad.SetGridy(0)
         for id,ratio in enumerate(self.ratio_histos):
+            opt = ''
             if id==0:
-                ratio.histo.Draw()
+                if 'TGraph' in ratio.histo.ClassName():
+                    opt = 'AP'
+                ratio.histo.Draw(opt)
             else:
-                ratio.histo.Draw('same')
+                if 'TGraph' in ratio.histo.ClassName():
+                    opt = 'P'
+                ratio.histo.Draw(opt+'same')
                 
         # we now set the axis properties
         y_min_value = y_min

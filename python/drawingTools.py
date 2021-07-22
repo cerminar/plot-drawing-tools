@@ -57,8 +57,6 @@ def SaveCanvas(canvas, name):
 #   return;
 # }
 
-
-
 def getText(text, ndc_x, ndc_y):
     global stuff
     rtext = ROOT.TLatex(ndc_x, ndc_y, text)
@@ -121,21 +119,20 @@ def drawAndProfileX(plot2d, miny=None, maxy=None, do_profile=True, options='', t
         rtext = getText(text, 0.15, 0.85)
         rtext.Draw('same')
 
-
     c.Draw()
 
 
 class ColorPalette(object):
     def __init__(self):
         self.color_base = [
-            ROOT.kBlue+4, 
-            ROOT.kAzure+1, 
-            ROOT.kViolet+5, 
-            ROOT.kViolet, 
-            ROOT.kPink-9, 
-            ROOT.kRed-4, 
-            ROOT.kOrange+1, 
-            ROOT.kGreen+1, 
+            ROOT.kBlue+4,
+            ROOT.kAzure+1,
+            ROOT.kViolet+5,
+            ROOT.kViolet,
+            ROOT.kPink-9,
+            ROOT.kRed-4,
+            ROOT.kOrange+1,
+            ROOT.kGreen+1,
             ROOT.kYellow-3]
 
     def __getitem__(self, idx):
@@ -145,7 +142,7 @@ class ColorPalette(object):
         else:
             mod = int(idx / len(self.color_base))
             sign = 1
-            if mod%2:
+            if mod % 2:
                 sign = -1
             index = idx-mod*len(self.color_base)
             # print (f'mod: {mod}, index: {index}, sign: color: {self.color_base[index]+sign*mod*5}')
@@ -153,13 +150,13 @@ class ColorPalette(object):
         # print (f'get color: {color} for idx: {idx}')
         return color
 
-    
+
 class DrawConfig(object):
     def __init__(self):
         self.do_stats = False
         self.marker_size = 0.5
         self.marker_styles = [id for id in range(20, 50)]
-        
+
 #         self.canvas_sizes = (800, 600)
         self.canvas_sizes = (600, 600)
         # SetMargin (Float_t left, Float_t right, Float_t bottom, Float_t top)
@@ -170,14 +167,17 @@ class DrawConfig(object):
         self.legend_size = (0.26, 0.1)
         self.additional_text = []
         self.additional_text_size = 0.03
-    
+
     @property
     def colors(self):
         return ColorPalette()
 
+
 tdr_config = DrawConfig()
-tdr_config.additional_text.append((0.13,0.91,"scale[1.5]{CMS} scale[1.]{Phase-2 Simulation}"))
-tdr_config.additional_text.append((0.69,0.91,"14TeV, 200 PU"))
+tdr_config.additional_text.append(
+    (0.13, 0.91, "scale[1.5]{CMS} scale[1.]{Phase-2 Simulation}"))
+tdr_config.additional_text.append(
+    (0.69, 0.91, "14TeV, 200 PU"))
 
 rleg_config = DrawConfig()
 rleg_config.canvas_sizes = (800, 600)
@@ -221,10 +221,10 @@ class RatioPlot(object):
                 else:
                     y_ratio[id] = y_num[id]/y_den[id]
                 # print(f'{id}: y_num: {y_num[id]} y_den: {y_den[id]}')
-                    
+
             self.histo = ROOT.TGraph(npoints, x_num, array.array('d', y_ratio))
 
-    
+
 class DrawMachine(object):
     def __init__(self, config):
         global stuff
@@ -239,7 +239,7 @@ class DrawMachine(object):
         return
 
     def addHistos(self, histograms, labels):
-        for hidx,hist in enumerate(histograms):
+        for hidx, hist in enumerate(histograms):
             histo_class = hist.ClassName()
             if 'TH2' in histo_class or 'TH3' in histo_class:
                 self.overlay = False
@@ -263,8 +263,8 @@ class DrawMachine(object):
         tex.SetTextSize(self.config.additional_text_size)
         for txt in self.config.additional_text:
             tex.DrawLatexNDC(txt[0], txt[1], txt[2])
-        tex.Draw("same");
-     
+        tex.Draw("same")
+
     def formatHisto(self, hidx, hist, options=''):
         histo_class = hist.ClassName()
         hist.UseCurrentStyle()
@@ -287,15 +287,13 @@ class DrawMachine(object):
                 hist.SetLineColor(self.config.colors[hidx])
 
     def formatHistos(self, options=''):
-        for hidx,hist in enumerate(self.histos):
+        for hidx, hist in enumerate(self.histos):
             self.formatHisto(hidx, hist, options)
-                
+
     def formatRatioHistos(self, options=''):
         for hist in self.ratio_histos:
             self.formatHisto(hist.id_num, hist.histo, options)
 
-    
-    
     def createCanvas(self, do_ratio=False):
         if self.canvas is not None:
             return
@@ -341,27 +339,24 @@ class DrawMachine(object):
                                 self.config.legend_position[1],
                                 self.config.legend_position[0]+self.config.legend_size[0],
                                 self.config.legend_position[1]+self.config.legend_size[1])
-        for hidx,hist in enumerate(self.histos):
+        for hidx, hist in enumerate(self.histos):
             histo_class = hist.ClassName()
             if 'TGraph' not in histo_class:
                 self.legend.AddEntry(hist, self.labels[hidx], 'lP')
             else:
                 self.legend.AddEntry(hist, self.labels[hidx], 'P')
 
-        return
-
-    
     def addRatioHisto(self, id_num, id_den):
         if len(self.ratio_histos) != 0:
             if id_den not in [rh.id_den for rh in self.ratio_histos]:
-                print (f'***Warning: ratio histo can not be added, since id_den: {id_den} != from existing ratio plots!')
+                print(f'***Warning: ratio histo can not be added, since id_den: {id_den} != from existing ratio plots!')
                 return
         try:
             ratio = RatioPlot(id_num, self.histos[id_num], id_den, self.histos[id_den])
             self.ratio_histos.append(ratio)
         except Exception as inst:
             print(f"***Warning: Ratio plot can not be added: {str(inst)}")
-    
+
     def draw(self,
              text,
              options='',
@@ -383,10 +378,10 @@ class DrawMachine(object):
 
         global p_idx
         global stuff
-        
+
         if len(self.ratio_histos) == 0:
             do_ratio = False
-        
+
         self.formatHistos(options)
         self.createCanvas(do_ratio=do_ratio)
         if self.overlay:
@@ -407,7 +402,7 @@ class DrawMachine(object):
             ROOT.gPad.SetFrameBorderMode(0)
             ROOT.gPad.SetBottomMargin(0.26)
             self.canvas.cd(1)
-            
+
         drawn_histos = []
         for hidx, hist in enumerate(self.histos):
             histo_class = hist.ClassName()
@@ -439,14 +434,12 @@ class DrawMachine(object):
                     self.drawAdditionalText()
 
             if do_profile:
-                profname = d_hist.GetName()+'_prof_'+str(p_idx)
                 p_idx += 1
                 prof = d_hist.ProfileX(d_hist.GetName()+'_prof_'+str(p_idx),
                                        1, -1, 's')
                 prof.SetMarkerColor(2)
                 prof.SetLineColor(2)
                 prof.Draw('same')
-
 
             drawn_histos.append(d_hist)
 
@@ -473,7 +466,6 @@ class DrawMachine(object):
                         hist.GetXaxis().SetRangeUser(x_min, x_max)
                     else:
                         hist.GetXaxis().SetLimits(x_min, x_max)
-
 
         if self.legend is not None and len(self.histos) > 1:
             self.legend.Draw("same")
@@ -513,11 +505,10 @@ class DrawMachine(object):
             ROOT.gPad.Update()
 
         ROOT.gPad.Draw()
-        
+
         if do_ratio:
             self.drawRatio(x_min=x_min, x_max=x_max, y_min=y_min_ratio, y_max=y_max_ratio)
-        
-        
+
         self.canvas.Draw()
         return
 
@@ -526,15 +517,15 @@ class DrawMachine(object):
         return
 
     def drawRatio(self, x_min=None, x_max=None, y_min=None, y_max=None):
-#         y_axis_label = '#splitline{{ratio}}{{to {}}}'.format(self.labels[self.ratio_histos[0].id_den])
+        #         y_axis_label = '#splitline{{ratio}}{{to {}}}'.format(self.labels[self.ratio_histos[0].id_den])
         y_axis_label = '#splitline{{ratio}}{{scale[0.5]{{to {}}}}}'.format(self.labels[self.ratio_histos[0].id_den])
 
         self.formatRatioHistos()
         self.canvas.cd(2)
         ROOT.gPad.SetGridy(0)
-        for id,ratio in enumerate(self.ratio_histos):
+        for id, ratio in enumerate(self.ratio_histos):
             opt = ''
-            if id==0:
+            if id == 0:
                 if 'TGraph' in ratio.histo.ClassName():
                     opt = 'AP'
                 ratio.histo.Draw(opt)
@@ -542,7 +533,7 @@ class DrawMachine(object):
                 if 'TGraph' in ratio.histo.ClassName():
                     opt = 'P'
                 ratio.histo.Draw(opt+'same')
-                
+
         # we now set the axis properties
         y_min_value = y_min
         y_max_value = y_max
@@ -585,9 +576,8 @@ class DrawMachine(object):
             aline.Draw("same")
             stuff.append(aline)
             self.canvas.Update()
-        
+
         self.canvas.Draw()
-    
 
 
 def draw(histograms,
@@ -639,7 +629,7 @@ def draw(histograms,
             h_lines=h_lines,
             do_profile=do_profile,
             # do_ratio=False,
-           )
+            )
     if do_write:
         dm.write(name=write_name)
     return dm
@@ -649,29 +639,7 @@ files = {}
 file_keys = {}
 
 
-class RootFile:
-    def __init__(self, file_name):
-        global file
-        self.file_name = file_name
-        if self.file_name not in list(files.keys()):
-            print('get file: {}'.format(self.file_name))
-            files[self.file_name] = ROOT.TFile(self.file_name)
-        self._file = files[self.file_name]
-        self._file_keys = None
-
-    def cd(self):
-        self._file.cd()
-
-    def GetListOfKeys(self):
-        global file_keys
-        if self.file_name not in list(file_keys.keys()):
-            print('get list')
-            file_keys[self.file_name] = self._file.GetListOfKeys()
-        self._file_keys = file_keys[self.file_name]
-        return self._file_keys
-
-
-class Sample():
+class HistoFile():
     def __init__(self, name, label, version=None, type=None):
         self.name = name
         self.label = label
@@ -728,7 +696,7 @@ class Sample():
 
     def build_file_primitive_index(self):
         if self.oldStyle:
-            print ('This is old style')
+            print('This is old style')
             return self.build_file_primitive_index_oldStyle()
         # FIXME: this is really hugly
         composite_classes = {('GenParticleHistos', 'h_effNum_'): 'HistoSetEff',
@@ -787,6 +755,25 @@ class Sample():
                                                (primitive_index.tp_sel == tp_sel)].gen_sel.unique()
                     print('    - TP SEL: {} -> GEN SEL: {}'.format(tp_sel, gen_sels))
 
+    def print_primitives(self, tp=False):
+        print(self)
+        primitive_index = self.build_file_primitive_index()
+        classtypes = primitive_index.classtype.unique()
+        for classtype in classtypes:
+            print('- HistoClass: {}'.format(classtype))
+            if not tp:
+                continue
+            tps = primitive_index[primitive_index.classtype == classtype].tp.unique()
+            for tp in tps:
+                print('  - TP: {}'.format(tp))
+                tp_sels = primitive_index[(primitive_index.classtype == classtype) &
+                                          (primitive_index.tp == tp)].tp_sel.unique()
+                for tp_sel in tp_sels:
+                    gen_sels = primitive_index[(primitive_index.classtype == classtype) &
+                                               (primitive_index.tp == tp) &
+                                               (primitive_index.tp_sel == tp_sel)].gen_sel.unique()
+                    print('    - TP SEL: {} -> GEN SEL: {}'.format(tp_sel, gen_sels))
+
 
 class HProxy:
     def __init__(self, classtype, tp, tp_sel, gen_sel, root_file):
@@ -813,10 +800,10 @@ class HWrapperLazy(object):
         self.histo = histo
         self.data_df = None
         self.filled = False
-    
+
     def fill_df(self, data):
         self.data_df = data.copy()
-    
+
     def get(self, debug=False):
         if not self.filled:
             print('Wrapper: {} not filled!'.format(self))
@@ -828,7 +815,7 @@ class HWrapperLazy(object):
 class HWrapper(object):
     def __init__(self, histo):
         self.histo = histo
-    
+
     def get(self, debug=False):
         return self.histo
 
@@ -849,7 +836,7 @@ class HPlot:
         for sample in self.samples_:
             histo_primtive_index = sample.build_file_primitive_index()
             if histo_primtive_index.empty:
-                print ('*** ERROR: No histo primitives for sample {}!'.format(sample))
+                print('*** ERROR: No histo primitives for sample {}!'.format(sample))
                 continue
             class_primitive_index = histo_primtive_index[histo_primtive_index.classtype == str(classtype).split('.')[-1].rstrip('\'>')]
             if class_primitive_index.empty:
@@ -886,8 +873,6 @@ class HPlot:
         labels = []
         text = ''
 
-
-
         query = '(pu == @pu) & (tp == @tp) & (tp_sel == @tp_sel) & (classtype == @classtype)'
         rank_criteria = [('pu', pu), ('tp', tp), ('tp_sel', tp_sel)]
         if gen_sel is not None:
@@ -897,7 +882,7 @@ class HPlot:
             query += ' & (gen_sel.isnull())'
         if sample is not None:
             query += '& (sample == @sample)'
-            rank_criteria = [('sample',sample)] + rank_criteria
+            rank_criteria = [('sample', sample)] + rank_criteria
         # we want to preserve the order as in the input lists
         histo_df = self.data.query(query).copy()
 
@@ -911,11 +896,11 @@ class HPlot:
             sort_list = dict(zip(crit, range(len(crit))))
             histo_df[crit_name+'_rank'] = histo_df[crit_name].map(sort_list)
             rank_list.append(crit_name+'_rank')
-        
-        histo_df.sort_values(rank_list, 
+
+        histo_df.sort_values(rank_list,
                              ascending=[True]*len(rank_list),
                              inplace=True)
-        
+
         for br in rank_list:
             histo_df.drop(br, axis=1, inplace=True)
 

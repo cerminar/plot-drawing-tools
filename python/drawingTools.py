@@ -9,6 +9,7 @@ import pandas as pd
 import six
 from six.moves import range
 import array
+import pprint
 
 # some useful globals, mainly to deal with ROOT idiosyncrasies
 c_idx = 0
@@ -694,7 +695,7 @@ class HistoFile():
 
         return pd.DataFrame(data_list)
 
-    def build_file_primitive_index(self):
+    def build_file_primitive_index(self, debug=True):
         if self.oldStyle:
             print('This is old style')
             return self.build_file_primitive_index_oldStyle()
@@ -712,9 +713,11 @@ class HistoFile():
         for key in self.histo_file.GetListOfKeys():
             # first level is classtype
             classtype = key.GetName()
-            print('--- {}'.format(classtype))
+            if(debug):
+                print('--- {}'.format(classtype))
             file_dir = self.histo_file.GetDirectory(key.GetName())
-            print('# of plots: {}'.format(len(file_dir.GetListOfKeys())))
+            if(debug):
+                print('# of plots: {}'.format(len(file_dir.GetListOfKeys())))
             # same primitives (tp, tp_sel, gen_sel) applies to several entries
             key_set = set()
             for histo in file_dir.GetListOfKeys():
@@ -730,7 +733,8 @@ class HistoFile():
                     composite_class = composite_classes[(classtype, '{}_{}_'.format(name_parts[0], name_parts[1]))]
                     cltype, tp, tp_sel, gen_sel = composite_class, name_parts[2], name_parts[3], name_parts[4]
                 key_set.add((cltype, tp, tp_sel, gen_sel))
-            print('# of primitives: {}'.format(len(key_set)))
+            if(debug):
+                print('# of primitives: {}'.format(len(key_set)))
             for cltype, tp, tp_sel, gen_sel in key_set:
                 data_list.append({'classtype': cltype,
                                   'tp': tp,
@@ -755,24 +759,31 @@ class HistoFile():
                                                (primitive_index.tp_sel == tp_sel)].gen_sel.unique()
                     print('    - TP SEL: {} -> GEN SEL: {}'.format(tp_sel, gen_sels))
 
-    def print_primitives(self, tp=False):
+    def print_primitives(self):
+        pp = pprint.PrettyPrinter(indent=4)
+
         print(self)
-        primitive_index = self.build_file_primitive_index()
-        classtypes = primitive_index.classtype.unique()
-        for classtype in classtypes:
-            print('- HistoClass: {}'.format(classtype))
-            if not tp:
-                continue
-            tps = primitive_index[primitive_index.classtype == classtype].tp.unique()
-            for tp in tps:
-                print('  - TP: {}'.format(tp))
-                tp_sels = primitive_index[(primitive_index.classtype == classtype) &
-                                          (primitive_index.tp == tp)].tp_sel.unique()
-                for tp_sel in tp_sels:
-                    gen_sels = primitive_index[(primitive_index.classtype == classtype) &
-                                               (primitive_index.tp == tp) &
-                                               (primitive_index.tp_sel == tp_sel)].gen_sel.unique()
-                    print('    - TP SEL: {} -> GEN SEL: {}'.format(tp_sel, gen_sels))
+
+        primitive_index = self.build_file_primitive_index(debug=False)
+        classtypes = primitive_index.classtype.unique().tolist()
+        print('--- HistoClass: ')
+        pp.pprint(classtypes)
+
+        tps = primitive_index.tp.unique().tolist()
+        tp_select = {}
+        for tp in tps:
+            tp_select[tp] = primitive_index[primitive_index.tp == tp].tp_sel.unique().tolist()
+        # ==== GEN selections ===============================================
+        gen_select = {}
+        for tp in tps:
+            gen_select[tp] = primitive_index[primitive_index.tp == tp].gen_sel.unique().tolist()
+
+        print('--- TPs: ')
+        pp.pprint(tps)
+        print('--- TP selections:')
+        pp.pprint(tp_select)
+        print('--- GEN selections:')
+        pp.pprint(gen_select)
 
 
 class HProxy:
@@ -823,13 +834,13 @@ class HWrapper(object):
 class HPlot:
     def __init__(self, samples, labels_dict):
         self.samples_ = samples
-
-        # populate the label dict
+        # reference and complete the label dict
         self.labels_dict = labels_dict
         for sample in samples:
             self.labels_dict[sample.type] = sample.type
         self.labels_dict.update({'PU0': 'PU0', 'PU200': 'PU200'})
-
+        # dataframe used to store the actual data and metadata
+        # histos need to be proxies or wrappers (get method to actually retrieve the root histo)
         self.data = pd.DataFrame(columns=['sample', 'pu', 'tp', 'tp_sel', 'gen_sel', 'classtype', 'histo'])
 
     def create_histo_proxies(self, classtype):
@@ -860,6 +871,9 @@ class HPlot:
                 subset=['sample', 'pu', 'tp', 'tp_sel', 'gen_sel', 'classtype'],
                 inplace=True,
                 keep='last')
+
+    def tps(self):
+        return self.data.tp.unique().tolist()
 
     def get_histo(self,
                   classtype,

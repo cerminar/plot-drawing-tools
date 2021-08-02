@@ -10,12 +10,12 @@ def effSigma(hist):
     xaxis = hist.GetXaxis()
     nb = xaxis.GetNbins()
     if nb < 10:
-        print "effsigma: Not a valid histo. nbins = {}".format(nb)
+        print("effsigma: Not a valid histo. nbins = {}".format(nb))
         return -1
 
     bwid = xaxis.GetBinWidth(1)
     if bwid == 0:
-        print "effsigma: Not a valid histo. bwid = {}".format(bwid)
+        print("effsigma: Not a valid histo. bwid = {}".format(bwid))
         return -1
 
     xmax = xaxis.GetXmax()
@@ -30,7 +30,7 @@ def effSigma(hist):
         total += hist.GetBinContent(i)
 
     if total < 100.:
-        print "effsigma: Too few entries {}".format(total)
+        print("effsigma: Too few entries {}".format(total))
         return -1
 
     ierr = 0
@@ -82,7 +82,7 @@ def effSigma(hist):
     if ismin == nrms or ismin == -nrms:
         ierr = 3
     if ierr != 0:
-        print "effsigma: Error of type {}".format(ierr)
+        print("effsigma: Error of type {}".format(ierr))
 
     return widmin
 
@@ -113,7 +113,7 @@ def gausstailfit_wc(name, project_hist, bin_limits):
     global cache
     global stuff
     if cache is not None and not cache[(cache.h_name == name) & (cache.bin_limits == bin_limits)].empty:
-        print 'READ cached fit results h_name: {}, bin_limits: {}'.format(name, bin_limits)
+        print('READ cached fit results h_name: {}, bin_limits: {}'.format(name, bin_limits))
 #         print cache[(cache.h_name == name) & (cache.bin_limits == bin_limits)].results
         return cache[(cache.h_name == name) & (cache.bin_limits == bin_limits)].results.values[0]
 
@@ -207,7 +207,7 @@ def gausstailfit_ptresp(project_hist, x_low=0., x_high=1.2):
     def gausstail(x, p):
         return p[0] * ROOT.Math.crystalball_function(x[0], p[3], p[4], p[2], p[1])
 
-    print x_low, x_high
+    # print x_low, x_high
     fitf = ROOT.TF1('gausstail', gausstail, x_low, x_high, 5)
 
     fitf.SetParNames('norm', 'mean', 'sigma', 'alpha', 'n')
@@ -221,7 +221,7 @@ def gausstailfit_ptresp(project_hist, x_low=0., x_high=1.2):
 #     print '   y_max = {}, max_value = {}, RMS = {}'.format(max_y, max_value, rms_value)
     result = project_hist.Fit('gausstail', 'QERLS+')
     result.Print()
-    print 'CHi2 prob: {}'.format(fitf.GetProb())
+    print('CHi2 prob: {}'.format(fitf.GetProb()))
 #     print '   norm = {}, reso_mean = {}, reso_sigma = {}, alpha = {}, n = {}'.format(result.GetParams()[0],
 #                                                                                      result.GetParams()[1],
 #                                                                                      result.GetParams()[2],
@@ -247,14 +247,14 @@ def computeResolution(histo2d,
             if not cache[(cache.h_name == histo_name) &
                          (cache.bin_limits == bin_limits) &
                          (cache.fit_function == fit_function)].empty:
-                print 'READ cached fit results h_name: {}, bin_limits: {}, fit_function: {}'.format(histo_name,
+                print('READ cached fit results h_name: {}, bin_limits: {}, fit_function: {}'.format(histo_name,
                                                                                                     bin_limits,
-                                                                                                    fit_function)
+                                                                                                    fit_function))
                 return cache[(cache.h_name == histo_name) &
                              (cache.bin_limits == bin_limits) &
                              (cache.fit_function == fit_function)].results.values[0]
             else:
-                print "No ENTRY in CACHE"
+                print("No ENTRY in CACHE")
                 result = fit_function(project_hist)
                 cache.loc[cache.shape[0]+1] = {
                     'h_name': histo_name,
@@ -268,7 +268,7 @@ def computeResolution(histo2d,
     h2d.GetYaxis().SetRangeUser(y_axis_range[0], y_axis_range[1])
 
     x, y, ex_l, ex_h, ey_l, ey_h = [], [], [], [], [], []
-    print '-----------------------'
+    print('-----------------------')
     for x_bin_low, x_bin_high in bin_limits:
         y_proj = h2d.ProjectionY(uuid.uuid4().hex[:6]+'_y', x_bin_low, x_bin_high)
         stuff.append(y_proj)
@@ -304,7 +304,7 @@ def computeEResolution(h2d_orig,
     h2d = h2d_orig.Clone()
     h2d.GetYaxis().SetRangeUser(-100, 100)
     x, y, ex_l, ex_h, ey_l, ey_h = [], [], [], [], [], []
-    print '-----------------------'
+    print('-----------------------')
     for x_bin_low, x_bin_high in bins_limits:
         y_proj = h2d.ProjectionY(uuid.uuid4().hex[:6]+'_y', x_bin_low, x_bin_high)
         stuff.append(y_proj)
@@ -338,13 +338,13 @@ def computeEResolutionMean(h2d_orig,
     h2d = h2d_orig.Clone()
     h2d.GetYaxis().SetRangeUser(-100, 100)
     x, y, ex_l, ex_h, ey_l, ey_h = [], [], [], [], [], []
-    print '-----------------------'
+    print('-----------------------')
     for x_bin_low, x_bin_high in bins_limits:
         y_proj = h2d.ProjectionY(uuid.uuid4().hex[:6]+'_y', x_bin_low, x_bin_high)
         stuff.append(y_proj)
         x_low = h2d.GetXaxis().GetBinLowEdge(x_bin_low)
         x_high = h2d.GetXaxis().GetBinUpEdge(x_bin_high)
-        print 'x_low: {} x_high: {}'.format(x_low, x_high)
+        print('x_low: {} x_high: {}'.format(x_low, x_high))
 #         fit_result = gausstailfit(h2d_orig.GetName(), y_proj)
         fit_result = gausstailfit_wc(h2d_orig.GetName(), y_proj, (x_bin_low, x_bin_high))
 
@@ -370,7 +370,7 @@ def get_gauss_avg_sigma(ys):
     # print median,lo,hi
     avg = median
     rms2 = (hi - lo)
-    for niter in xrange(3):
+    for niter in range(3):
         truncated = [y for y in ys if abs(y-avg) < rms2]
         if len(truncated) <= 2:
             break

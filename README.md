@@ -3,8 +3,7 @@
 This is a collection of jupyter notebooks adn python scripts for drawing histograms created using [ntuple-tools](https://github.com/cerminar/ntuple-tools/).
 
 You can browse the actual notebook output clicking on the link:
-[Notebook Viewer (NBViewer)](https://nbviewer.jupyter.org/github/cerminar/plot-drawing-tools/tree/v150/)
-## Installation and setup
+[Notebook Viewer (NBViewer)](https://nbviewer.jupyter.org/github/cerminar/plot-drawing-tools/tree/v151/)## Installation and setup
 
 Clone this repo in the `ntuple-tools` directory.
 

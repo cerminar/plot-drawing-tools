@@ -3,8 +3,7 @@
 This is a collection of jupyter notebooks adn python scripts for drawing histograms created using [ntuple-tools](https://github.com/cerminar/ntuple-tools/).
 
 You can browse the actual notebook output clicking on the link:
-[Notebook Viewer (NBViewer)](https://nbviewer.jupyter.org/github/cerminar/plot-drawing-tools/tree/b'v151'/)Clone this repo in the `ntuple-tools` directory.
-
+[Notebook Viewer (NBViewer)](https://nbviewer.jupyter.org/github/cerminar/plot-drawing-tools/tree/b'heads/v151B.81A'/)
 You need to add the virtualenv you are using to run `nttuple-tools` as jupyther kernel:
 
 `ipython kernel install --name "<kernel-name>" --user`

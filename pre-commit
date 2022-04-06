@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 """
 Referencing current branch in github readme.md[1]
 
@@ -14,14 +14,14 @@ import subprocess
 GITHUB_USER="cerminar"
 REPO="plot-drawing-tools"
 
-print "Starting pre-commit hook..."
+print("Starting pre-commit hook...")
 
 BRANCH=subprocess.check_output(["git",
                                 "rev-parse",
                                 "--abbrev-ref",
                                 "HEAD"]).strip()
 
-print 'on branch: {}'.format(BRANCH)
+print('on branch: {}'.format(BRANCH))
 
 # Output String with Variable substitution
 new_link="[Notebook Viewer (NBViewer)](https://nbviewer.jupyter.org/github/{GITHUB_USER}/{REPO}/tree/{BRANCH}/)".format(BRANCH=BRANCH,
@@ -43,4 +43,4 @@ with open("README.md", "w") as fh:
 
 subprocess.check_output(["git", "add", "README.md" ])
 
-print "pre-commit hook complete."
+print("pre-commit hook complete.")

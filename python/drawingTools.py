@@ -10,6 +10,7 @@ import six
 from six.moves import range
 import array
 import pprint
+import os
 
 # some useful globals, mainly to deal with ROOT idiosyncrasies
 c_idx = 0
@@ -641,14 +642,14 @@ file_keys = {}
 
 
 class HistoFile():
-    def __init__(self, name, label, version=None, type=None):
+    def __init__(self, name, label, version=None, type=None, path='../plots/'):
         self.name = name
         self.label = label
         if version:
             version = '_'+version
         else:
             version = ''
-        self.histo_filename = '../plots1/histos_{}{}.root'.format(self.name, version)
+        self.histo_filename = os.path.join(path, 'histos_{}{}.root'.format(self.name, version))
         self.histo_file = None
         self.type = type
         self.oldStyle = False

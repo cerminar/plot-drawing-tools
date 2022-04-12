@@ -9,7 +9,7 @@ Clone this repo in the `ntuple-tools` directory.
 
 You need to add the virtualenv you are using to run `nttuple-tools` as jupyther kernel:
 
-`ipython kernel install --name "<kernel-name>" --user`
+`ipython3 kernel install --name "<kernel-name>" --user`
 
 You are now ready to start the notebooks with:
 

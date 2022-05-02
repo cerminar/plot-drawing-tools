@@ -2,9 +2,12 @@
 
 This is a collection of jupyter notebooks adn python scripts for drawing histograms created using [ntuple-tools](https://github.com/cerminar/ntuple-tools/).
 
-You can browse the actual notebook output clicking on the link:
-[Notebook Viewer (NBViewer)](https://nbviewer.jupyter.org/github/cerminar/plot-drawing-tools/tree/b'v151B.81A'/)
+## Browsing the notebooks
 
+You can browse the actual notebook output clicking on the link:
+[Notebook Viewer (NBViewer)](https://nbviewer.jupyter.org/github/cerminar/plot-drawing-tools/tree/v151B.81A/)
+
+## Initial setup 
 Clone this repo in the `ntuple-tools` directory (see [ntuple-tools repository](https://github.com/cerminar/ntuple-tools)).
 
 Install the `jupyter` packge in the venv you are using to run `ntuple-tools`:
@@ -30,4 +33,15 @@ Select the kernel you just created to run the notebooks!
 An introduction to the functionality of the package can be found in the notebook
 
 `notebooks/getting-started.ipynb`
+
+## Automatically linking current branch to nbviewer
+
+[nbviewer](https://nbviewer.org/) allows to display the notebook output from a github repository, including the javascript to display the ROOT plots correctly.
+
+A `pre-commit` hook can be used to update the link in the `Browsing the notebooks` section of this README to point to the current branch.
+
+To install the hook:
+
+`cp python/pre-commit.py .git/hooks/pre-commit`
+
 

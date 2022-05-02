@@ -508,7 +508,13 @@ class DrawMachine(object):
         ROOT.gPad.Draw()
 
         if do_ratio:
-            self.drawRatio(x_min=x_min, x_max=x_max, y_min=y_min_ratio, y_max=y_max_ratio)
+            self.drawRatio(
+                x_min=x_min,
+                x_max=x_max,
+                y_min=y_min_ratio,
+                y_max=y_max_ratio,
+                x_axis_label=x_axis_label
+                )
 
         self.canvas.Draw()
         return
@@ -517,9 +523,15 @@ class DrawMachine(object):
         self.canvas.SaveAs('{}.{}'.format(name, ext))
         return
 
-    def drawRatio(self, x_min=None, x_max=None, y_min=None, y_max=None):
+    def drawRatio(
+            self,
+            x_min=None, x_max=None,
+            y_min=None, y_max=None,
+            x_axis_label=None):
+
         #         y_axis_label = '#splitline{{ratio}}{{to {}}}'.format(self.labels[self.ratio_histos[0].id_den])
-        y_axis_label = '#splitline{{ratio}}{{scale[0.5]{{to {}}}}}'.format(self.labels[self.ratio_histos[0].id_den])
+        y_axis_label = '#splitline{{ratio}}{{scale[0.5]{{to {}}}}}'.format(
+            self.labels[self.ratio_histos[0].id_den])
 
         self.formatRatioHistos()
         self.canvas.cd(2)
@@ -530,6 +542,8 @@ class DrawMachine(object):
                 if 'TGraph' in ratio.histo.ClassName():
                     opt = 'AP'
                 ratio.histo.Draw(opt)
+                if x_axis_label:
+                    ratio.histo.GetXaxis().SetTitle(x_axis_label)
             else:
                 if 'TGraph' in ratio.histo.ClassName():
                     opt = 'P'
@@ -549,11 +563,11 @@ class DrawMachine(object):
 
         # print (y_min_value, y_max_value)
         for hist in drawn_histos:
-            hist.GetXaxis().SetTitleOffset(5)
+            hist.GetXaxis().SetTitleOffset(1.)
             hist.GetYaxis().SetRangeUser(y_min_value, y_max_value)
             if y_axis_label:
                 hist.GetYaxis().SetTitle(y_axis_label)
-                hist.GetYaxis().SetTitleOffset(2.)
+                hist.GetYaxis().SetTitleOffset(0.)
                 #             if x_axis_label:
 #                 hist.GetXaxis().SetTitle(x_axis_label)
             if x_min is not None and x_max is not None:
@@ -641,14 +655,16 @@ file_keys = {}
 
 
 class HistoFile():
-    def __init__(self, name, label, version=None, type=None):
+    def __init__(self, name, label, version=None, type=None, path='../plots'):
         self.name = name
         self.label = label
+        self.version = version
+
         if version:
             version = '_'+version
         else:
             version = ''
-        self.histo_filename = '../plots1/histos_{}{}.root'.format(self.name, version)
+        self.histo_filename = '{}/histos_{}{}.root'.format(path, self.name, version)
         self.histo_file = None
         self.type = type
         self.oldStyle = False
@@ -715,6 +731,8 @@ class HistoFile():
             classtype = key.GetName()
             if(debug):
                 print('--- {}'.format(classtype))
+            if key.GetClassName() != 'TDirectoryFile':
+                continue
             file_dir = self.histo_file.GetDirectory(key.GetName())
             if(debug):
                 print('# of plots: {}'.format(len(file_dir.GetListOfKeys())))
@@ -855,18 +873,23 @@ class HPlot:
                 return
 
             for index, row in class_primitive_index.iterrows():
-                self.data = self.data.append({'sample': sample.type,
-                                              'pu': sample.label,
-                                              'tp': row.tp,
-                                              'tp_sel': row.tp_sel,
-                                              'gen_sel': row.gen_sel,
-                                              'classtype': classtype,
-                                              'histo': HProxy(classtype,
-                                                              row.tp,
-                                                              row.tp_sel,
-                                                              row.gen_sel,
-                                                              sample.histo_file)},
-                                             ignore_index=True)
+                newentry = pd.DataFrame(
+                        [{'sample': sample.type,
+                        'pu': sample.label,
+                        'tp': row.tp,
+                        'tp_sel': row.tp_sel,
+                        'gen_sel': row.gen_sel,
+                        'classtype': classtype,
+                        'histo': HProxy(classtype,
+                                        row.tp,
+                                        row.tp_sel,
+                                        row.gen_sel,
+                                        sample.histo_file)}])
+                self.data = pd.concat(
+                    [self.data, newentry],
+                    ignore_index=True
+                )
+
             self.data.drop_duplicates(
                 subset=['sample', 'pu', 'tp', 'tp_sel', 'gen_sel', 'classtype'],
                 inplace=True,

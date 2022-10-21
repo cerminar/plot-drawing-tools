@@ -5,8 +5,7 @@ This is a collection of jupyter notebooks adn python scripts for drawing histogr
 ## Browsing the notebooks
 
 You can browse the actual notebook output clicking on the link:
-[Notebook Viewer (NBViewer)](https://nbviewer.jupyter.org/github/cerminar/plot-drawing-tools/tree/v152/)## Initial setup 
-Clone this repo in the `ntuple-tools` directory (see [ntuple-tools repository](https://github.com/cerminar/ntuple-tools)).
+[Notebook Viewer (NBViewer)](https://nbviewer.jupyter.org/github/cerminar/plot-drawing-tools/tree/v152/)Clone this repo in the `ntuple-tools` directory (see [ntuple-tools repository](https://github.com/cerminar/ntuple-tools)).
 
 Install the `jupyter` packge in the venv you are using to run `ntuple-tools`:
 

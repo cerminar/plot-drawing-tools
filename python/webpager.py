@@ -1,6 +1,6 @@
 import os
 import shutil
-
+import time
 def confirm():
     yesAnswers = ['yes', 'y'];
     noAnswers = ['no', 'n']
@@ -16,36 +16,50 @@ def confirm():
 
 
 class WebPageCreator(object):
-    def __init__(self, top_dir, base_path='~/CERNbox/www/plots') -> None:
-        self.base_path = base_path
-        self.top_dir = top_dir
+    def __init__(self, topic_dir, project_dir, base_dir='~/CERNbox/www/plots', tmp_dir='/tmp') -> None:
+        self.base_dir = base_dir
+        self.tmp_path = os.path.join(tmp_dir, project_dir, topic_dir)
+        self.project_path = os.path.join(base_dir, project_dir)
+        self.topic_path = os.path.join(base_dir, project_dir, topic_dir)
+        os.makedirs(self.tmp_path, exist_ok=True)
         self.canvases = {}
 
     def add(self, name, canvas):
         if name in self.canvases.keys():
             print(f'[WebPageCreator]***Warning: overwriting canvas: {name}!')
         self.canvases[name] = canvas
+        for ext in ['png', 'pdf']:
+            canvas.SaveAs(os.path.join(self.tmp_path, f'{name}.{ext}'))
+            time.sleep(0.1)
 
-    def publish(self, directory):
-        top_path = os.path.join(self.base_path, self.top_dir)
-        target_dir = os.path.join(top_path, directory)
-        
-        if not os.path.exists(top_path):
-            os.mkdir(top_path)
-            shutil.copyfile(os.path.join(self.base_path, 'index.php'), os.path.join(top_path, 'index.php'))
+
+    def publish(self):        
+        if not os.path.exists(self.project_path):
+            os.mkdir(self.project_path)
+            shutil.copyfile(
+                os.path.join(self.base_dir, 'index.php'), 
+                os.path.join(self.project_path, 'index.php'))
             
-        if os.path.exists(target_dir):
-            print(f'WARNING: directory: {target_dir} already exists. Content might be overwritten?')
+        if os.path.exists(self.topic_path):
+            print(f'WARNING: directory: {self.topic_path} already exists. Content might be overwritten?')
             if not confirm():
                 return
         else:
-            os.mkdir(target_dir)
-            shutil.copyfile(os.path.join(self.base_path, 'index.php'), os.path.join(target_dir, 'index.php'))
+            os.mkdir(self.topic_path)
+            shutil.copyfile(
+                os.path.join(self.base_dir, 'index.php'), 
+                os.path.join(self.topic_path, 'index.php'))
 
         for name,canvas in self.canvases.items():
             print(f'publishing canvas: {name}')
             for ext in ['png', 'pdf']:
-                canvas.SaveAs(os.path.join(target_dir, f'{name}.{ext}'))
+                source = os.path.join(self.tmp_path, f'{name}.{ext}')
+                if os.path.exists(source):
+                    shutil.copyfile(
+                        source, 
+                        os.path.join(self.topic_path, f'{name}.{ext}'))
+                else:
+                    print(f' .  file: {source} missing!')
         return
 
 

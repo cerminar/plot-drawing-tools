@@ -170,10 +170,7 @@ class DrawConfig(object):
         self.legend_size = (0.26, 0.1)
         self.additional_text = []
         self.additional_text_size = 0.03
-
-    @property
-    def colors(self):
-        return ColorPalette()
+        self.colors = ColorPalette()
 
 
 tdr_config = DrawConfig()
@@ -399,7 +396,8 @@ class DrawMachine(object):
              do_profile=False,
              do_ratio=False,
              y_min_ratio=0.7,
-             y_max_ratio=1.3):
+             y_max_ratio=1.3,
+             h_lines_ratio=[0.9, 1.1]):
 
         global p_idx
         global stuff
@@ -455,7 +453,7 @@ class DrawMachine(object):
                 hist.GetYaxis().SetLabelSize(0.1)
             self.canvas.Update()
 
-            self.drawLines(r_pad_idx, y_log=False, x_log=False, v_lines=[], h_lines=[0.9, 1., 1.1])
+            self.drawLines(r_pad_idx, y_log=False, x_log=False, v_lines=[], h_lines=h_lines_ratio)
 
         self.canvas.Draw()
         return
@@ -634,8 +632,9 @@ file_keys = {}
 
 
 class HistoFile():
-    def __init__(self, name, label, version=None, type=None, path='../plots'):
+    def __init__(self, name, pu, version=None, type=None, label=None, path='../plots'):
         self.name = name
+        self.pu = pu
         self.label = label
         self.version = version
 
@@ -799,7 +798,10 @@ class HProxy:
                 name = '{}_{}'.format(self.tp, self.tp_sel)
             if debug:
                 print('-- HProxy:Get: {}'.format(name))
-            self.instance = self.classtype(name, self.root_file, debug)
+            self.instance = self.classtype(
+                name=name, 
+                root_file=self.root_file, 
+                debug=debug)
         return self.instance
 
 
@@ -834,7 +836,10 @@ class HPlot:
         # reference and complete the label dict
         self.labels_dict = labels_dict
         for sample in samples:
-            self.labels_dict[sample.type] = sample.type
+            if sample.label is None:
+                self.labels_dict[sample.type] = sample.type
+            else:
+                self.labels_dict[sample.type] = sample.label
         self.labels_dict.update({'PU0': 'PU0', 'PU200': 'PU200'})
         # dataframe used to store the actual data and metadata
         # histos need to be proxies or wrappers (get method to actually retrieve the root histo)
@@ -854,7 +859,7 @@ class HPlot:
             for index, row in class_primitive_index.iterrows():
                 newentry = pd.DataFrame(
                         [{'sample': sample.type,
-                        'pu': sample.label,
+                        'pu': sample.pu,
                         'tp': row.tp,
                         'tp_sel': row.tp_sel,
                         'gen_sel': row.gen_sel,

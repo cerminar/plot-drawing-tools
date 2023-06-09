@@ -397,7 +397,8 @@ class DrawMachine(object):
              do_ratio=False,
              y_min_ratio=0.7,
              y_max_ratio=1.3,
-             h_lines_ratio=[0.9, 1.1]):
+             h_lines_ratio=[0.9, 1.1],
+             y_axis_label_ratio=None):
 
         global p_idx
         global stuff
@@ -426,6 +427,8 @@ class DrawMachine(object):
         if do_ratio:
             ROOT.gROOT.ForceStyle()
             r_y_axis_label = f'#splitline{{ratio to}}{{{self.labels[self.ratio_histos[0].id_den]}}}'
+            if y_axis_label_ratio is not None:
+                r_y_axis_label = y_axis_label_ratio
             # r_y_axis_label = '#splitline{{ratio}}{{#scale[0.5]{{to {}}}}}'.format(
                 # self.labels[self.ratio_histos[0].id_den])
             r_pad_idx = [2]*len(self.ratio_histos)

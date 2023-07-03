@@ -186,6 +186,42 @@ rleg_config.legend_position = (0.7, 0.71)
 rleg_config.legend_size = (0.25, 0.14)
 
 
+class DPSColorPalette(ColorPalette):
+    def __init__(self):  
+        ColorPalette.__init__(self)
+        self.color_map = {
+            # 'Sta': ROOT.kGreen+1,
+            'Sta': ROOT.kViolet-7,
+            'TkEm': ROOT.kPink-9,
+            'TkEle': ROOT.kBlue+2,
+            'IsoTkEle': ROOT.kAzure+1,
+            'EllTkEle': ROOT.kViolet+5,
+            'sig': ROOT.kAzure-9,
+            'bkg': ROOT.kOrange-9,
+  
+        }
+
+    def keys(self):
+        return self.color_map.keys()
+        
+    def setPalette(self, keys):
+        self.color_base = []
+        for key in keys:
+            self.color_base.append(self.color_map[key])
+
+
+dpsconfig = DrawConfig()
+dpsconfig.marker_size = 1
+dpsconfig.legend_size=(0.3, 0.3)
+dpsconfig.legend_position=(0.3, 0.15)
+# newconfig.marker_styles.append(10)
+dpsconfig.colors = DPSColorPalette()
+dpsconfig.additional_text.append(
+    (0.13, 0.91, "#scale[1.5]{CMS} #scale[1.]{Phase-2 Simulation Preliminary}"))
+dpsconfig.additional_text.append(
+    (0.69, 0.91, "14TeV, 200 PU"))
+
+
 class RatioPlot(object):
     def __init__(self, id_num, h_num, id_den, h_den):
         global stuff
@@ -288,9 +324,9 @@ class DrawMachine(object):
             if self.overlay:
                 hist.SetLineColor(self.config.colors[hidx])
 
-    def formatHistos(self, options=''):
+    def formatHistos(self, options):
         for hidx, hist in enumerate(self.histos):
-            self.formatHisto(hidx, hist, options)
+            self.formatHisto(hidx, hist, options[hidx])
 
     def formatRatioHistos(self, options=''):
         for hist in self.ratio_histos:
@@ -406,12 +442,16 @@ class DrawMachine(object):
         if len(self.ratio_histos) == 0:
             do_ratio = False
 
-        self.formatHistos(options)
+        opt = options
+        if type(options) != list:
+            opt = [options]*len(self.histos)
+
+        self.formatHistos(opt)
         pad_idx = self.createCanvas(do_ratio=do_ratio)
         if self.overlay:
             self.createLegend()
 
-        drawn_histos = self.drawHistos(pad_idx, self.histos, text, options, norm, do_profile)
+        drawn_histos = self.drawHistos(pad_idx, self.histos, text, opt, norm, do_profile)
 
         self.formatAxis(drawn_histos, y_min, y_max, x_min, x_max, y_axis_label, x_axis_label)
 
@@ -436,7 +476,7 @@ class DrawMachine(object):
             r_drawn_histos = self.drawHistos(
                 r_pad_idx, 
                 [rh.histo for rh in self.ratio_histos], 
-                text='', options='', norm=False, do_profile=False)
+                text='', options=['']*len(self.ratio_histos), norm=False, do_profile=False)
             self.formatAxis(
                 r_drawn_histos, 
                 y_min_ratio, y_max_ratio, 
@@ -513,7 +553,7 @@ class DrawMachine(object):
     def drawHistos(self, pad_idx, histos, text, options, norm, do_profile):
         drawn_histos = []
         for hidx, hist in enumerate(histos):
-            opt = options
+            opt = options[hidx]
             histo_class = hist.ClassName()
             if 'TGraph' in histo_class:
                 opt = 'P'+opt

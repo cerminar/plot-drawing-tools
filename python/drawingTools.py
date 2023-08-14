@@ -434,7 +434,9 @@ class DrawMachine(object):
              y_min_ratio=0.7,
              y_max_ratio=1.3,
              h_lines_ratio=[0.9, 1.1],
-             y_axis_label_ratio=None):
+             y_axis_label_ratio=None,
+             ratio_histos_manipulator=None,
+             histos_manipulator=None):
 
         global p_idx
         global stuff
@@ -454,6 +456,8 @@ class DrawMachine(object):
         drawn_histos = self.drawHistos(pad_idx, self.histos, text, opt, norm, do_profile)
 
         self.formatAxis(drawn_histos, y_min, y_max, x_min, x_max, y_axis_label, x_axis_label)
+        if histos_manipulator:
+            histos_manipulator(drawn_histos)
 
         if self.legend is not None and len(self.histos) > 1:
             self.legend.Draw("same")
@@ -492,8 +496,12 @@ class DrawMachine(object):
                 hist.GetYaxis().SetTitleSize(0.1)
                 hist.GetXaxis().SetLabelSize(0.15)
                 hist.GetYaxis().SetTitleOffset(0.3)
-                hist.GetYaxis().SetNdivisions(502)
+                hist.GetYaxis().SetNdivisions(2)
                 hist.GetYaxis().SetLabelSize(0.1)
+
+            if ratio_histos_manipulator:
+                ratio_histos_manipulator(r_drawn_histos)
+
             self.canvas.Update()
 
             self.drawLines(r_pad_idx, y_log=False, x_log=False, v_lines=[], h_lines=h_lines_ratio)

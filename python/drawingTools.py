@@ -481,6 +481,7 @@ class DrawMachine(object):
                 r_pad_idx, 
                 [rh.histo for rh in self.ratio_histos], 
                 text='', options=['']*len(self.ratio_histos), norm=False, do_profile=False)
+            stuff.append(r_drawn_histos)
             self.formatAxis(
                 r_drawn_histos, 
                 y_min_ratio, y_max_ratio, 
